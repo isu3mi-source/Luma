@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+
+  <title>Luma</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- 縦向きのとき -->
+  <div id="portraitWarning">
+    <div class="rotate-card">
+      <div class="rotate-icon">↻</div>
+      <h2>Luma</h2>
+      <p>端末を横向きにしてください</p>
+    </div>
+  </div>
+
+
+  <main id="app">
+
+    <!-- 背景 -->
+    <div class="background"></div>
+
+
+    <!-- 左上メニュー -->
+    <button id="menuButton" class="glass-circle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+
+    <!-- Dynamic Island -->
+    <div id="island" class="island idle">
+      <div id="islandLeft"></div>
+      <div id="islandRight"></div>
+    </div>
+
+
+    <!-- Dynamic Islandから出る通知 -->
+    <div id="islandNotification">
+
+      <div class="notification-title" id="notificationTitle">
+        リマインダー
+      </div>
+
+      <div class="notification-text" id="notificationText">
+        宿題をする
+      </div>
+
+      <div class="notification-actions">
+        <button onclick="closeNotification()">完了</button>
+        <button onclick="closeNotification()">10分後</button>
+      </div>
+
+    </div>
+
+
+    <!-- 右上の天気 -->
+    <button class="weather-mini" onclick="openPage('weather')">
+
+      <div id="weatherIcon">☁️</div>
+
+      <div>
+        <strong id="weatherTemp">--°</strong>
+        <small id="weatherCity">未設定</small>
+      </div>
+
+    </button>
+
+
+    <!-- ホーム -->
+    <section id="homePage" class="page active">
+
+      <div class="clock-area">
+
+        <div id="date">--月--日</div>
+
+        <div id="clock">00:00</div>
+
+
+        <div class="home-reminders">
+
+          <div class="reminder-row">
+            <button class="check"></button>
+            <span>宿題をする</span>
+            <time>23:30</time>
+          </div>
+
+          <div class="reminder-row">
+            <button class="check"></button>
+            <span>明日の準備</span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- 天気ページ -->
+    <section id="weatherPage" class="page">
+
+      <div class="page-panel">
+
+        <button class="backButton" onclick="openPage('home')">
+          ‹
+        </button>
+
+        <button class="addButton" onclick="changeCity()">
+          ＋
+        </button>
+
+        <div class="weather-main">
+
+          <h2 id="weatherPageCity">
+            市町村を追加
+          </h2>
+
+          <div id="weatherPageTemp" class="big-temp">
+            --°
+          </div>
+
+          <div id="weatherDescription">
+            --
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- メニューを開いた時の背景 -->
+    <div id="menuOverlay"></div>
+
+
+    <!-- サイドメニュー -->
+    <aside id="sideMenu">
+
+      <h2>Luma</h2>
+
+      <button onclick="openPage('home')">
+        ◷　時計
+      </button>
+
+      <button>
+        ◉　アラーム
+      </button>
+
+      <button onclick="startDemoTimer()">
+        ◴　タイマー
+      </button>
+
+      <button>
+        ◷　ストップウォッチ
+      </button>
+
+      <button>
+        ◎　世界時計
+      </button>
+
+      <button>
+        ☷　リマインダー
+      </button>
+
+      <button onclick="openPage('weather')">
+        ☁　天気
+      </button>
+
+      <button onclick="startMusicDemo()">
+        ♪　ミュージック
+      </button>
+
+      <div class="menu-divider"></div>
+
+      <button>
+        ⚙　設定
+      </button>
+
+    </aside>
+
+  </main>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
