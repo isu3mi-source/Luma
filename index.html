@@ -2,492 +2,397 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#111111">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#17120f">
 
   <title>Luma</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
 
-<div id="portraitWarning">
-  <div class="rotate-card">
-    <div class="rotate-icon">↻</div>
-    <h2>Luma</h2>
-    <p>端末を横向きにしてください</p>
-  </div>
-</div>
-
-
-<main id="app">
-
-  <div class="background"></div>
-
-
-  <!-- ホーム専用メニューボタン -->
-  <button id="menuButton" class="glass-circle" aria-label="メニュー">
-    <span></span>
-    <span></span>
-    <span></span>
-  </button>
-
-
-  <!-- 各機能画面の閉じるボタン -->
-  <button id="closePageButton"
-          class="glass-circle close-page"
-          onclick="openPage('home')">
-    ×
-  </button>
-
-
-  <!-- Dynamic Island -->
-  <button id="island"
-          class="island idle"
-          onclick="expandIsland()">
-
-    <span id="islandLeft"></span>
-    <span id="islandCenter"></span>
-    <span id="islandRight"></span>
-
-  </button>
-
-
-  <!-- Dynamic Island 下方向通知 -->
-  <div id="islandNotification">
-
-    <div class="notification-title"
-         id="notificationTitle">
-      リマインダー
+  <!-- 縦向き -->
+  <div id="portraitWarning">
+    <div class="rotateBox">
+      <div class="rotateIcon">↻</div>
+      <div class="rotateTitle">Luma</div>
+      <div class="rotateText">端末を横向きにしてください</div>
     </div>
-
-    <div class="notification-text"
-         id="notificationText">
-      宿題をする
-    </div>
-
-    <div class="notification-actions">
-
-      <button onclick="closeNotification()">
-        完了
-      </button>
-
-      <button onclick="snoozeNotification()">
-        10分後
-      </button>
-
-    </div>
-
   </div>
 
 
-  <!-- ホームの天気 -->
-  <button id="weatherMini"
-          class="weather-mini"
-          onclick="openPage('weather')">
+  <!-- アプリ -->
+  <div id="app">
 
-    <span id="weatherIcon">☁️</span>
-
-    <span class="weather-mini-text">
-      <strong id="weatherTemp">--°</strong>
-      <small id="weatherCity">未設定</small>
-    </span>
-
-  </button>
+    <div class="wallpaper"></div>
 
 
-  <!-- ================= HOME ================= -->
+    <!-- HOME メニュー -->
+    <button id="menuButton" class="roundGlass">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
 
-  <section id="homePage"
-           class="page active">
 
-    <div class="clock-area">
+    <!-- 機能画面 閉じる -->
+    <button id="closeButton" class="roundGlass closeButton">
+      ×
+    </button>
 
-      <div id="date">--月--日</div>
 
-      <div id="clock">00:00</div>
+    <!-- Dynamic Island -->
+    <div id="island">
 
-      <div id="homeReminders"
-           class="home-reminders">
+      <div id="islandLeft"></div>
 
-        <div class="reminder-row">
-          <button class="check"></button>
-          <span>宿題をする</span>
-          <time>23:30</time>
-        </div>
+      <div id="islandCenter"></div>
 
-        <div class="reminder-row">
-          <button class="check"></button>
-          <span>明日の準備</span>
-        </div>
-
-      </div>
+      <div id="islandRight"></div>
 
     </div>
 
-  </section>
+
+    <!-- HOME 天気 -->
+    <button id="weatherMini" onclick="openPage('weather')">
+
+      <span class="weatherIcon">☁️</span>
+
+      <span class="weatherText">
+        <strong id="miniTemp">--°</strong>
+        <small id="miniCity">未設定</small>
+      </span>
+
+    </button>
 
 
-  <!-- ================= アラーム ================= -->
+    <!-- HOME -->
+    <section id="homePage" class="page active">
 
-  <section id="alarmPage" class="page">
+      <div class="homeCenter">
 
-    <div class="feature-panel">
+        <div id="dateText"></div>
 
-      <div class="page-title">
-        アラーム
-      </div>
+        <div id="clockText"></div>
 
-      <div class="empty-message">
-        <div class="big-symbol">◉</div>
-        <h2>アラーム</h2>
-        <p>アラーム機能は次のアップデートで追加します。</p>
-      </div>
+        <div id="homeReminderList">
 
-    </div>
+          <div class="homeReminder">
+            <button class="circleCheck"></button>
+            <span>宿題をする</span>
+            <time>23:30</time>
+          </div>
 
-  </section>
+          <div class="homeReminder">
+            <button class="circleCheck"></button>
+            <span>明日の準備</span>
+          </div>
 
-
-  <!-- ================= タイマー ================= -->
-
-  <section id="timerPage" class="page">
-
-    <div class="feature-panel">
-
-      <div class="page-title">
-        タイマー
-      </div>
-
-      <div class="timer-display"
-           id="timerDisplay">
-        05:00
-      </div>
-
-      <div class="timer-buttons">
-
-        <button class="glass-button"
-                onclick="setTimer(300)">
-          5分
-        </button>
-
-        <button class="glass-button"
-                onclick="setTimer(600)">
-          10分
-        </button>
-
-        <button class="glass-button"
-                onclick="setTimer(1800)">
-          30分
-        </button>
-
-      </div>
-
-      <div class="timer-buttons">
-
-        <button class="main-button"
-                onclick="startTimer()">
-          スタート
-        </button>
-
-        <button class="glass-button"
-                onclick="pauseTimer()">
-          一時停止
-        </button>
-
-        <button class="glass-button"
-                onclick="resetTimer()">
-          リセット
-        </button>
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- ================= ストップウォッチ ================= -->
-
-  <section id="stopwatchPage" class="page">
-
-    <div class="feature-panel">
-
-      <div class="page-title">
-        ストップウォッチ
-      </div>
-
-      <div class="timer-display"
-           id="stopwatchDisplay">
-        00:00.0
-      </div>
-
-      <div class="timer-buttons">
-
-        <button class="main-button"
-                onclick="startStopwatch()">
-          スタート
-        </button>
-
-        <button class="glass-button"
-                onclick="pauseStopwatch()">
-          一時停止
-        </button>
-
-        <button class="glass-button"
-                onclick="resetStopwatch()">
-          リセット
-        </button>
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- ================= 世界時計 ================= -->
-
-  <section id="worldPage" class="page">
-
-    <div class="feature-panel">
-
-      <div class="page-title">
-        世界時計
-      </div>
-
-      <div class="world-list">
-
-        <div class="world-card">
-          <span>東京</span>
-          <strong id="tokyoTime">--:--</strong>
-        </div>
-
-        <div class="world-card">
-          <span>ロンドン</span>
-          <strong id="londonTime">--:--</strong>
-        </div>
-
-        <div class="world-card">
-          <span>ニューヨーク</span>
-          <strong id="newYorkTime">--:--</strong>
         </div>
 
       </div>
 
-    </div>
-
-  </section>
+    </section>
 
 
-  <!-- ================= リマインダー ================= -->
+    <!-- アラーム -->
+    <section id="alarmPage" class="page">
 
-  <section id="reminderPage" class="page">
+      <div class="glassPanel">
 
-    <div class="feature-panel">
+        <h1>アラーム</h1>
 
-      <div class="page-title">
-        リマインダー
+        <div class="centerContent">
+
+          <div class="featureIcon">◉</div>
+
+          <h2>アラーム</h2>
+
+          <p>アラーム機能は現在準備中です。</p>
+
+        </div>
+
       </div>
 
-      <button class="add-reminder"
-              onclick="addReminder()">
-        ＋
+    </section>
+
+
+    <!-- タイマー -->
+    <section id="timerPage" class="page">
+
+      <div class="glassPanel">
+
+        <h1>タイマー</h1>
+
+        <div id="timerDisplay" class="largeTime">
+          05:00
+        </div>
+
+        <div class="buttonRow">
+
+          <button onclick="setTimer(300)">5分</button>
+
+          <button onclick="setTimer(600)">10分</button>
+
+          <button onclick="setTimer(1800)">30分</button>
+
+        </div>
+
+        <div class="buttonRow">
+
+          <button onclick="startTimer()">スタート</button>
+
+          <button onclick="pauseTimer()">一時停止</button>
+
+          <button onclick="resetTimer()">リセット</button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ストップウォッチ -->
+    <section id="stopwatchPage" class="page">
+
+      <div class="glassPanel">
+
+        <h1>ストップウォッチ</h1>
+
+        <div id="stopwatchDisplay" class="largeTime">
+          00:00.0
+        </div>
+
+        <div class="buttonRow">
+
+          <button onclick="startStopwatch()">スタート</button>
+
+          <button onclick="pauseStopwatch()">一時停止</button>
+
+          <button onclick="resetStopwatch()">リセット</button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- 世界時計 -->
+    <section id="worldPage" class="page">
+
+      <div class="glassPanel">
+
+        <h1>世界時計</h1>
+
+        <div class="worldList">
+
+          <div class="worldItem">
+            <span>東京</span>
+            <strong id="tokyoTime">--:--</strong>
+          </div>
+
+          <div class="worldItem">
+            <span>ロンドン</span>
+            <strong id="londonTime">--:--</strong>
+          </div>
+
+          <div class="worldItem">
+            <span>ニューヨーク</span>
+            <strong id="newYorkTime">--:--</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- リマインダー -->
+    <section id="reminderPage" class="page">
+
+      <div class="glassPanel">
+
+        <h1>リマインダー</h1>
+
+        <button id="addReminderButton" onclick="addReminder()">
+          ＋
+        </button>
+
+        <div id="reminderList"></div>
+
+      </div>
+
+    </section>
+
+
+    <!-- 天気 -->
+    <section id="weatherPage" class="page">
+
+      <div class="weatherPanel">
+
+        <button id="addCityButton" onclick="changeCity()">
+          ＋
+        </button>
+
+        <div class="weatherCenter">
+
+          <h2 id="weatherCity">
+            市町村を追加
+          </h2>
+
+          <div id="weatherTemp">
+            --°
+          </div>
+
+          <div id="weatherCondition">
+            天気情報
+          </div>
+
+          <p class="smallNote">
+            ＋を押して市町村を設定
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ミュージック -->
+    <section id="musicPage" class="page">
+
+      <div class="glassPanel">
+
+        <h1>ミュージック</h1>
+
+        <div class="musicCenter">
+
+          <div class="musicIcon">♪</div>
+
+          <h2 id="musicTitle">曲を追加</h2>
+
+          <input
+            id="musicFile"
+            type="file"
+            accept="audio/*"
+            hidden
+          >
+
+          <button onclick="selectMusic()">
+            ＋ 曲を追加
+          </button>
+
+          <audio
+            id="audioPlayer"
+            controls>
+          </audio>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- 設定 -->
+    <section id="settingsPage" class="page">
+
+      <div class="glassPanel">
+
+        <h1>設定</h1>
+
+        <div class="settingsList">
+
+          <label class="settingItem">
+
+            <span>秒を表示</span>
+
+            <input id="secondsToggle" type="checkbox">
+
+          </label>
+
+          <label class="settingItem">
+
+            <span>ホームのリマインダー</span>
+
+            <input
+              id="homeReminderToggle"
+              type="checkbox"
+              checked
+            >
+
+          </label>
+
+          <div class="settingItem">
+            <span>バージョン</span>
+            <strong>Luma β 0.2</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- メニュー背景 -->
+    <div id="menuOverlay"></div>
+
+
+    <!-- メニュー -->
+    <aside id="sideMenu">
+
+      <h2>Luma</h2>
+
+      <button onclick="openPage('home')">
+        ◷　時計
       </button>
 
-      <div id="reminderList"
-           class="reminder-list"></div>
-
-    </div>
-
-  </section>
-
-
-  <!-- ================= 天気 ================= -->
-
-  <section id="weatherPage" class="page">
-
-    <div class="weather-panel">
-
-      <button class="add-city"
-              onclick="changeCity()">
-        ＋
+      <button onclick="openPage('alarm')">
+        ◉　アラーム
       </button>
 
-      <div class="weather-main">
+      <button onclick="openPage('timer')">
+        ◴　タイマー
+      </button>
 
-        <h2 id="weatherPageCity">
-          市町村を追加
-        </h2>
+      <button onclick="openPage('stopwatch')">
+        ◷　ストップウォッチ
+      </button>
 
-        <div id="weatherPageTemp"
-             class="big-temp">
-          --°
-        </div>
+      <button onclick="openPage('world')">
+        ◎　世界時計
+      </button>
 
-        <div id="weatherDescription">
-          天気情報を設定してください
-        </div>
+      <button onclick="openPage('reminder')">
+        ☷　リマインダー
+      </button>
 
-        <div class="weather-note">
-          Ver.2では都市設定まで対応<br>
-          実際の天気受信は次のアップデートで接続します
-        </div>
+      <button onclick="openPage('weather')">
+        ☁　天気
+      </button>
 
-      </div>
+      <button onclick="openPage('music')">
+        ♪　ミュージック
+      </button>
 
-    </div>
+      <div class="divider"></div>
 
-  </section>
+      <button onclick="openPage('settings')">
+        ⚙　設定
+      </button>
 
+    </aside>
 
-  <!-- ================= ミュージック ================= -->
-
-  <section id="musicPage" class="page">
-
-    <div class="feature-panel">
-
-      <div class="page-title">
-        ミュージック
-      </div>
-
-      <div class="music-card">
-
-        <div class="music-note">♪</div>
-
-        <h2 id="musicTitle">
-          曲を追加
-        </h2>
-
-        <p id="musicFileName">
-          MP3 / M4A など
-        </p>
-
-        <input type="file"
-               id="musicFile"
-               accept="audio/*"
-               hidden>
-
-        <button class="main-button"
-                onclick="chooseMusic()">
-          ＋ 曲を追加
-        </button>
-
-        <audio id="audioPlayer"
-               controls></audio>
-
-      </div>
-
-    </div>
-
-  </section>
+  </div>
 
 
-  <!-- ================= 設定 ================= -->
-
-  <section id="settingsPage" class="page">
-
-    <div class="feature-panel">
-
-      <div class="page-title">
-        設定
-      </div>
-
-      <div class="settings-list">
-
-        <label class="setting-row">
-
-          <span>
-            秒を表示
-          </span>
-
-          <input type="checkbox"
-                 id="secondsToggle">
-
-        </label>
-
-
-        <label class="setting-row">
-
-          <span>
-            リマインダーをホームに表示
-          </span>
-
-          <input type="checkbox"
-                 id="reminderToggle"
-                 checked>
-
-        </label>
-
-
-        <div class="setting-row">
-
-          <span>バージョン</span>
-          <strong>Luma β 0.2</strong>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- メニュー背景 -->
-  <div id="menuOverlay"></div>
-
-
-  <!-- サイドメニュー -->
-  <aside id="sideMenu">
-
-    <h2>Luma</h2>
-
-    <button onclick="openPage('home')">
-      ◷　時計
-    </button>
-
-    <button onclick="openPage('alarm')">
-      ◉　アラーム
-    </button>
-
-    <button onclick="openPage('timer')">
-      ◴　タイマー
-    </button>
-
-    <button onclick="openPage('stopwatch')">
-      ◷　ストップウォッチ
-    </button>
-
-    <button onclick="openPage('world')">
-      ◎　世界時計
-    </button>
-
-    <button onclick="openPage('reminder')">
-      ☷　リマインダー
-    </button>
-
-    <button onclick="openPage('weather')">
-      ☁　天気
-    </button>
-
-    <button onclick="openPage('music')">
-      ♪　ミュージック
-    </button>
-
-    <div class="menu-divider"></div>
-
-    <button onclick="openPage('settings')">
-      ⚙　設定
-    </button>
-
-  </aside>
-
-</main>
-
-<script src="script.js"></script>
+  <script src="./script.js"></script>
 
 </body>
 </html>
