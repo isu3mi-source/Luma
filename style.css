@@ -9,16 +9,9 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-
   background: #080808;
   color: white;
-
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
 button {
@@ -26,77 +19,36 @@ button {
   cursor: pointer;
 }
 
-
-/* =========================
-   背景
-========================= */
-
+/* 背景 */
 .wallpaper {
   position: fixed;
   inset: 0;
-
   background:
-    radial-gradient(
-      circle at 18% 45%,
-      rgba(255, 190, 115, .78),
-      transparent 33%
-    ),
-    radial-gradient(
-      circle at 78% 65%,
-      rgba(170, 100, 82, .70),
-      transparent 36%
-    ),
-    radial-gradient(
-      circle at 55% 15%,
-      rgba(120, 100, 135, .35),
-      transparent 30%
-    ),
-    linear-gradient(
-      135deg,
-      #4b3528,
-      #181313 55%,
-      #070707
-    );
-
+    radial-gradient(circle at 18% 45%, rgba(255,190,115,.78), transparent 33%),
+    radial-gradient(circle at 78% 65%, rgba(170,100,82,.70), transparent 36%),
+    radial-gradient(circle at 55% 15%, rgba(120,100,135,.35), transparent 30%),
+    linear-gradient(135deg, #4b3528, #181313 55%, #070707);
   transform: scale(1.08);
 }
 
-
-/* =========================
-   縦画面
-========================= */
-
+/* 縦向き時 */
 #portraitWarning {
   display: none;
-
   position: fixed;
   inset: 0;
-
   z-index: 99999;
-
   align-items: center;
   justify-content: center;
-
   color: white;
-
-  background:
-    radial-gradient(
-      circle at 50% 40%,
-      #4b3528,
-      #080808
-    );
+  background: radial-gradient(circle at 50% 40%, #4b3528, #080808);
 }
 
 .rotateBox {
   padding: 35px 45px;
-
   text-align: center;
-
   border: 1px solid rgba(255,255,255,.22);
   border-radius: 32px;
-
   background: rgba(255,255,255,.09);
-
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
 }
@@ -107,20 +59,16 @@ button {
 
 .rotateTitle {
   margin-top: 10px;
-
   font-size: 30px;
   font-weight: 700;
 }
 
 .rotateText {
   margin-top: 10px;
-
   opacity: .75;
 }
 
-
 @media (orientation: portrait) {
-
   #app {
     display: none;
   }
@@ -128,20 +76,13 @@ button {
   #portraitWarning {
     display: flex;
   }
-
 }
 
-
-/* =========================
-   ページ
-========================= */
-
+/* ページ */
 .page {
   position: fixed;
   inset: 0;
-
   z-index: 10;
-
   display: none;
 }
 
@@ -149,122 +90,76 @@ button {
   display: block;
 }
 
-
-/* =========================
-   ガラス丸ボタン
-========================= */
-
+/* ガラスボタン */
 .roundGlass {
   border: 1px solid rgba(255,255,255,.25);
-
   color: white;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.19),
-      rgba(255,255,255,.06)
-    );
-
+  background: linear-gradient(
+    145deg,
+    rgba(255,255,255,.19),
+    rgba(255,255,255,.06)
+  );
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
-
   box-shadow:
     inset 0 1px rgba(255,255,255,.35),
     0 10px 30px rgba(0,0,0,.18);
 }
 
-
-/* =========================
-   ☰
-========================= */
-
+/* メニューボタン */
 #menuButton {
   position: fixed;
-
   top: 25px;
   left: 28px;
-
   z-index: 300;
-
   width: 62px;
   height: 62px;
-
   border-radius: 50%;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   gap: 6px;
 }
 
 #menuButton span {
   display: block;
-
   width: 27px;
   height: 3px;
-
   border-radius: 10px;
-
   background: white;
 }
 
-
-/* =========================
-   ×
-========================= */
-
+/* 閉じるボタン */
 #closeButton {
   position: fixed;
-
   top: 25px;
   left: 28px;
-
   z-index: 300;
-
   width: 62px;
   height: 62px;
-
   border-radius: 50%;
-
   display: none;
-
   font-size: 31px;
 }
 
-
-/* =========================
-   Dynamic Island
-========================= */
-
+/* Dynamic Island */
 #island {
   position: fixed;
-
   top: 18px;
   left: 50%;
-
   transform: translateX(-50%);
-
   z-index: 500;
-
   width: 130px;
   height: 48px;
-
   padding: 0 18px;
-
   border-radius: 28px;
-
-  background: black;
-
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   font-size: 16px;
   font-weight: 600;
-
   transition:
     width .4s cubic-bezier(.2,.9,.2,1.15),
     height .4s cubic-bezier(.2,.9,.2,1.15);
@@ -282,35 +177,21 @@ button {
   margin-left: auto;
 }
 
-
-/* =========================
-   天気ミニ
-========================= */
-
+/* 右上の天気 */
 #weatherMini {
   position: fixed;
-
   top: 25px;
   right: 28px;
-
   z-index: 250;
-
   display: flex;
   align-items: center;
-
   gap: 10px;
-
   min-width: 145px;
-
   padding: 9px 17px;
-
   border: 1px solid rgba(255,255,255,.22);
   border-radius: 28px;
-
   color: white;
-
   background: rgba(255,255,255,.09);
-
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
 }
@@ -325,89 +206,63 @@ button {
 
 .weatherText strong {
   display: block;
-
   font-size: 22px;
 }
 
 .weatherText small {
   display: block;
-
   opacity: .65;
 }
 
-
-/* =========================
-   HOME
-========================= */
-
+/* ホーム */
 .homeCenter {
   position: absolute;
-
   top: 50%;
   left: 50%;
-
   width: 90%;
-
   transform: translate(-50%, -45%);
-
   text-align: center;
 }
 
 #dateText {
   font-size: clamp(20px, 3vw, 38px);
-
   font-weight: 600;
 }
 
 #clockText {
   font-size: clamp(100px, 19vw, 225px);
-
   font-weight: 200;
-
   letter-spacing: -7px;
-
   line-height: .95;
 }
 
-
-/* リマインダー */
-
+/* ホームのリマインダー */
 #homeReminderList {
   width: 470px;
-
   max-width: 70vw;
-
   margin: 18px auto 0;
-
   text-align: left;
 }
 
 .homeReminder {
   display: flex;
   align-items: center;
-
   gap: 12px;
-
   min-height: 38px;
-
   font-size: 19px;
 }
 
 .homeReminder time {
   margin-left: auto;
-
   opacity: .7;
 }
 
 .circleCheck {
   width: 25px;
   height: 25px;
-
   flex: 0 0 25px;
-
   border: 2px solid rgba(255,255,255,.85);
   border-radius: 50%;
-
   background: transparent;
 }
 
@@ -415,54 +270,36 @@ button {
   background: rgba(255,255,255,.28);
 }
 
-
-/* =========================
-   各ページ
-========================= */
-
+/* 各機能画面 */
 .glassPanel,
 .weatherPanel {
   position: absolute;
-
   inset: 16px;
-
   border: 1px solid rgba(255,255,255,.16);
   border-radius: 38px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(30,30,30,.58),
-      rgba(7,7,7,.40)
-    );
-
+  background: linear-gradient(
+    145deg,
+    rgba(30,30,30,.58),
+    rgba(7,7,7,.40)
+  );
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-
-  box-shadow:
-    inset 0 1px rgba(255,255,255,.2);
+  box-shadow: inset 0 1px rgba(255,255,255,.2);
 }
 
 .glassPanel h1 {
   margin: 0;
-
   padding-top: 31px;
-
   text-align: center;
-
   font-size: 27px;
 }
 
 .centerContent {
   position: absolute;
-
   top: 50%;
   left: 50%;
-
   transform: translate(-50%, -50%);
-
   width: 80%;
-
   text-align: center;
 }
 
@@ -470,57 +307,37 @@ button {
   font-size: 60px;
 }
 
-
-/* =========================
-   タイマー
-========================= */
-
+/* タイマー・ストップウォッチ */
 .largeTime {
   margin-top: 55px;
-
   text-align: center;
-
   font-size: clamp(70px, 13vw, 145px);
-
   font-weight: 200;
-
   font-variant-numeric: tabular-nums;
 }
 
 .buttonRow {
   display: flex;
   justify-content: center;
-
   gap: 12px;
-
   margin-top: 20px;
 }
 
 .buttonRow button,
 .musicCenter button {
   min-width: 105px;
-
   padding: 12px 20px;
-
   border: 1px solid rgba(255,255,255,.2);
   border-radius: 25px;
-
   color: white;
-
   background: rgba(255,255,255,.10);
-
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
-
-/* =========================
-   世界時計
-========================= */
-
+/* 世界時計 */
 .worldList {
   width: min(650px, 80%);
-
   margin: 50px auto;
 }
 
@@ -528,13 +345,9 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 18px 24px;
-
   margin-bottom: 12px;
-
   border-radius: 23px;
-
   background: rgba(255,255,255,.08);
 }
 
@@ -544,73 +357,49 @@ button {
 
 .worldItem strong {
   font-size: 32px;
-
   font-weight: 350;
 }
 
-
-/* =========================
-   リマインダー
-========================= */
-
+/* リマインダー */
 #addReminderButton,
 #addCityButton {
   position: absolute;
-
   top: 23px;
   right: 25px;
-
   z-index: 50;
-
   width: 54px;
   height: 54px;
-
   border: 1px solid rgba(255,255,255,.2);
   border-radius: 50%;
-
   color: white;
-
   background: rgba(255,255,255,.10);
-
   font-size: 29px;
 }
 
 #reminderList {
   width: min(650px, 80%);
-
   margin: 50px auto;
 }
 
 .reminderItem {
   display: flex;
   align-items: center;
-
   gap: 13px;
-
   margin-bottom: 10px;
-
   padding: 16px 20px;
-
   border-radius: 22px;
-
   background: rgba(255,255,255,.08);
 }
 
 .reminderItem button {
   width: 25px;
   height: 25px;
-
   border: 2px solid white;
   border-radius: 50%;
-
   background: transparent;
 }
 
-
-/* =========================
-   天気
-========================= */
-
+/* 天気 */
 .weatherPanel {
   background:
     radial-gradient(
@@ -627,19 +416,16 @@ button {
 
 .weatherCenter {
   padding-top: 75px;
-
   text-align: center;
 }
 
 .weatherCenter h2 {
   margin: 0;
-
   font-size: 30px;
 }
 
 #weatherTemp {
   font-size: clamp(90px, 14vw, 150px);
-
   font-weight: 200;
 }
 
@@ -649,20 +435,13 @@ button {
 
 .smallNote {
   margin-top: 30px;
-
   opacity: .55;
 }
 
-
-/* =========================
-   音楽
-========================= */
-
+/* ミュージック */
 .musicCenter {
   width: min(500px, 75%);
-
   margin: 50px auto;
-
   text-align: center;
 }
 
@@ -672,20 +451,13 @@ button {
 
 #audioPlayer {
   display: block;
-
   width: 100%;
-
   margin-top: 25px;
 }
 
-
-/* =========================
-   設定
-========================= */
-
+/* 設定 */
 .settingsList {
   width: min(650px, 80%);
-
   margin: 50px auto;
 }
 
@@ -693,77 +465,50 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   margin-bottom: 10px;
-
   padding: 18px 22px;
-
   border-radius: 22px;
-
   background: rgba(255,255,255,.08);
 }
 
-
-/* =========================
-   サイドメニュー
-========================= */
-
+/* メニュー背景 */
 #menuOverlay {
   position: fixed;
-
   inset: 0;
-
   z-index: 800;
-
   opacity: 0;
-
   pointer-events: none;
-
   background: rgba(0,0,0,.18);
-
   transition: .3s;
 }
 
 #menuOverlay.show {
   opacity: 1;
-
   pointer-events: auto;
-
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
 }
 
+/* サイドメニュー */
 #sideMenu {
   position: fixed;
-
   top: 0;
   left: 0;
-
   z-index: 900;
-
   width: 320px;
   max-width: 72vw;
-
   height: 100%;
-
   padding: 34px 20px;
-
   transform: translateX(-105%);
-
   border-right: 1px solid rgba(255,255,255,.22);
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(60,60,60,.65),
-      rgba(8,8,8,.58)
-    );
-
+  background: linear-gradient(
+    145deg,
+    rgba(60,60,60,.65),
+    rgba(8,8,8,.58)
+  );
   backdrop-filter: blur(38px);
   -webkit-backdrop-filter: blur(38px);
-
-  transition:
-    transform .4s cubic-bezier(.2,.9,.2,1);
+  transition: transform .4s cubic-bezier(.2,.9,.2,1);
 }
 
 #sideMenu.show {
@@ -772,24 +517,17 @@ button {
 
 #sideMenu h2 {
   margin: 0 0 22px 12px;
-
   font-size: 28px;
 }
 
 #sideMenu button {
   width: 100%;
-
   padding: 12px 15px;
-
   border: 0;
   border-radius: 16px;
-
   text-align: left;
-
   color: white;
-
   background: transparent;
-
   font-size: 17px;
 }
 
@@ -799,8 +537,6 @@ button {
 
 .divider {
   height: 1px;
-
   margin: 10px;
-
   background: rgba(255,255,255,.15);
 }
