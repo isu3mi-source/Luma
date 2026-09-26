@@ -1,3 +1,19 @@
+/* =========================================================
+   Luma v1.0
+   Glass Clock Dashboard
+========================================================= */
+
+:root {
+  --glass-rgb: 255, 255, 255;
+  --clock-opacity: .30;
+  --clock-brightness: 1;
+  --panel-bg: rgba(20, 20, 24, .52);
+  --border: rgba(255, 255, 255, .20);
+  --soft-border: rgba(255, 255, 255, .12);
+  --text-soft: rgba(255, 255, 255, .68);
+  --radius-large: 34px;
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -9,66 +25,156 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #080808;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  background: #090909;
+  color: #fff;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
 }
 
 button {
-  font: inherit;
   cursor: pointer;
 }
 
-/* 背景 */
+button:active {
+  transform: scale(.97);
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   壁紙
+========================================================= */
+
 .wallpaper {
   position: fixed;
   inset: 0;
+  z-index: 0;
+
   background:
-    radial-gradient(circle at 18% 45%, rgba(255,190,115,.78), transparent 33%),
-    radial-gradient(circle at 78% 65%, rgba(170,100,82,.70), transparent 36%),
-    radial-gradient(circle at 55% 15%, rgba(120,100,135,.35), transparent 30%),
-    linear-gradient(135deg, #4b3528, #181313 55%, #070707);
-  transform: scale(1.08);
+    radial-gradient(
+      circle at 18% 46%,
+      rgba(255, 176, 100, .72),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(119, 69, 85, .65),
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 56% 12%,
+      rgba(116, 99, 145, .48),
+      transparent 32%
+    ),
+    linear-gradient(
+      145deg,
+      #5a3527,
+      #241719 53%,
+      #08090d
+    );
+
+  background-size: cover;
+  background-position: center;
+
+  transform: scale(1.03);
 }
 
-/* 縦向き時 */
-#portraitWarning {
-  display: none;
+#wallpaperShade {
   position: fixed;
   inset: 0;
+  z-index: 1;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, .08),
+      rgba(0, 0, 0, .20)
+    );
+}
+
+
+/* =========================================================
+   縦向き
+========================================================= */
+
+#portraitWarning {
+  display: none;
+
+  position: fixed;
+  inset: 0;
+
   z-index: 99999;
+
   align-items: center;
   justify-content: center;
-  color: white;
-  background: radial-gradient(circle at 50% 40%, #4b3528, #080808);
+
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      #583829,
+      #080808 70%
+    );
+
+  color: #fff;
 }
 
 .rotateBox {
-  padding: 35px 45px;
+  width: min(80vw, 380px);
+
+  padding: 36px;
+
   text-align: center;
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 32px;
-  background: rgba(255,255,255,.09);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 34px;
+
+  background: rgba(255, 255, 255, .08);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .25),
+    0 25px 70px rgba(0, 0, 0, .30);
+
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
 }
 
 .rotateIcon {
-  font-size: 48px;
+  font-size: 55px;
 }
 
 .rotateTitle {
   margin-top: 10px;
-  font-size: 30px;
+
+  font-size: 31px;
   font-weight: 700;
 }
 
 .rotateText {
-  margin-top: 10px;
-  opacity: .75;
+  margin-top: 9px;
+
+  color: rgba(255, 255, 255, .70);
 }
 
 @media (orientation: portrait) {
+
   #app {
     display: none;
   }
@@ -78,465 +184,1673 @@ button {
   }
 }
 
-/* ページ */
+
+/* =========================================================
+   ページ
+========================================================= */
+
 .page {
+  display: none;
+
   position: fixed;
   inset: 0;
+
   z-index: 10;
-  display: none;
 }
 
 .page.active {
   display: block;
 }
 
-/* ガラスボタン */
-.roundGlass {
-  border: 1px solid rgba(255,255,255,.25);
-  color: white;
-  background: linear-gradient(
-    145deg,
-    rgba(255,255,255,.19),
-    rgba(255,255,255,.06)
-  );
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+
+/* =========================================================
+   共通 Liquid Glass
+========================================================= */
+
+.roundGlass,
+#weatherMini,
+.glassPanel,
+.settingsPanel,
+.weatherPanel,
+.modalCard,
+#sideMenu {
+
+  border: 1px solid var(--border);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, .13),
+      rgba(255, 255, 255, .035)
+    );
+
   box-shadow:
-    inset 0 1px rgba(255,255,255,.35),
-    0 10px 30px rgba(0,0,0,.18);
+    inset 0 1px 0 rgba(255, 255, 255, .30),
+    inset 0 -1px 0 rgba(255, 255, 255, .04),
+    0 20px 55px rgba(0, 0, 0, .22);
+
+  backdrop-filter:
+    blur(28px)
+    saturate(145%);
+
+  -webkit-backdrop-filter:
+    blur(28px)
+    saturate(145%);
 }
 
-/* メニューボタン */
+
+/* =========================================================
+   メニューボタン
+========================================================= */
+
 #menuButton {
   position: fixed;
+
   top: 25px;
   left: 28px;
+
   z-index: 300;
-  width: 62px;
-  height: 62px;
+
+  width: 64px;
+  height: 64px;
+
+  padding: 0;
+
   border-radius: 50%;
+
   display: flex;
   flex-direction: column;
+
   align-items: center;
   justify-content: center;
+
   gap: 6px;
+
+  color: white;
 }
 
 #menuButton span {
-  display: block;
-  width: 27px;
+  width: 28px;
   height: 3px;
-  border-radius: 10px;
-  background: white;
+
+  border-radius: 99px;
+
+  background: rgba(255, 255, 255, .92);
 }
 
-/* 閉じるボタン */
+
+/* =========================================================
+   戻るボタン
+========================================================= */
+
 #closeButton {
+  display: none;
+
   position: fixed;
+
   top: 25px;
   left: 28px;
+
   z-index: 300;
-  width: 62px;
-  height: 62px;
+
+  width: 60px;
+  height: 60px;
+
   border-radius: 50%;
-  display: none;
-  font-size: 31px;
+
+  color: white;
+
+  font-size: 29px;
+  font-weight: 300;
 }
 
-/* Dynamic Island */
+
+/* =========================================================
+   Dynamic Island
+========================================================= */
+
 #island {
   position: fixed;
-  top: 18px;
+
+  top: 17px;
   left: 50%;
-  transform: translateX(-50%);
+
   z-index: 500;
-  width: 130px;
+
+  transform: translateX(-50%);
+
+  width: 150px;
   height: 48px;
+
   padding: 0 18px;
+
+  border: 1px solid rgba(255, 255, 255, .06);
   border-radius: 28px;
-  background: #000;
+
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 16px;
-  font-weight: 600;
+
+  color: rgba(255, 255, 255, .84);
+
+  background: rgba(0, 0, 0, .96);
+
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, .25);
+
+  font-size: 14px;
+
   transition:
-    width .4s cubic-bezier(.2,.9,.2,1.15),
-    height .4s cubic-bezier(.2,.9,.2,1.15);
+    width .38s cubic-bezier(.2, .9, .2, 1.1),
+    height .38s cubic-bezier(.2, .9, .2, 1.1);
 }
 
 #island.timer {
-  width: 260px;
+  width: 255px;
 }
 
 #island.music {
-  width: 190px;
+  width: 205px;
+}
+
+#islandLeft {
+  min-width: 30px;
+}
+
+#islandCenter {
+  position: absolute;
+
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  white-space: nowrap;
 }
 
 #islandRight {
   margin-left: auto;
+
+  white-space: nowrap;
 }
 
-/* 右上の天気 */
+#islandTitle {
+  opacity: .76;
+}
+
+
+/* =========================================================
+   ホーム天気
+========================================================= */
+
 #weatherMini {
   position: fixed;
+
   top: 25px;
   right: 28px;
+
   z-index: 250;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+
   min-width: 145px;
-  padding: 9px 17px;
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 28px;
+  height: 64px;
+
+  padding: 8px 17px;
+
+  border-radius: 25px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
   color: white;
-  background: rgba(255,255,255,.09);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
 }
 
 .weatherIcon {
-  font-size: 25px;
+  font-size: 28px;
 }
 
 .weatherText {
+  display: flex;
+  flex-direction: column;
+
   text-align: left;
 }
 
 .weatherText strong {
-  display: block;
-  font-size: 22px;
+  font-size: 23px;
+  font-weight: 500;
 }
 
 .weatherText small {
-  display: block;
-  opacity: .65;
+  margin-top: 1px;
+
+  color: rgba(255, 255, 255, .68);
+
+  font-size: 12px;
 }
 
-/* ホーム */
+
+/* =========================================================
+   HOME
+========================================================= */
+
 .homeCenter {
   position: absolute;
+
   top: 50%;
   left: 50%;
-  width: 90%;
-  transform: translate(-50%, -45%);
+
+  width: min(850px, 84vw);
+
+  transform: translate(-50%, -48%);
+
   text-align: center;
 }
 
 #dateText {
-  font-size: clamp(20px, 3vw, 38px);
-  font-weight: 600;
+  margin-bottom: 10px;
+
+  font-size: clamp(18px, 2.4vw, 31px);
+
+  font-weight: 500;
+
+  text-shadow:
+    0 2px 12px rgba(0, 0, 0, .28);
+}
+
+
+/* =========================================================
+   ガラス時計
+========================================================= */
+
+.clockGlass {
+  position: relative;
+
+  width: fit-content;
+
+  min-width: min(610px, 72vw);
+
+  margin: 0 auto;
+
+  padding: 5px 40px 13px;
+
+  overflow: hidden;
+
+  border:
+    1px solid rgba(
+      var(--glass-rgb),
+      calc(var(--clock-opacity) + .15)
+    );
+
+  border-radius: 56px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(
+        var(--glass-rgb),
+        calc(var(--clock-opacity) + .05)
+      ),
+      rgba(
+        var(--glass-rgb),
+        calc(var(--clock-opacity) * .20)
+      )
+    );
+
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, .42),
+    inset 0 -2px 2px rgba(255, 255, 255, .08),
+    0 18px 50px rgba(0, 0, 0, .20),
+    0 0 45px rgba(
+      var(--glass-rgb),
+      calc(var(--clock-opacity) * .22)
+    );
+
+  backdrop-filter:
+    blur(28px)
+    saturate(170%)
+    brightness(var(--clock-brightness));
+
+  -webkit-backdrop-filter:
+    blur(28px)
+    saturate(170%)
+    brightness(var(--clock-brightness));
+}
+
+.clockGlass::before {
+  content: "";
+
+  position: absolute;
+
+  top: 2px;
+  left: 8%;
+
+  width: 84%;
+  height: 36%;
+
+  border-radius: 50%;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, .32),
+      transparent
+    );
+
+  filter: blur(6px);
+}
+
+.clockGlass::after {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  border-radius: inherit;
+
+  background:
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(255, 255, 255, .25),
+      transparent 24%
+    );
 }
 
 #clockText {
-  font-size: clamp(100px, 19vw, 225px);
+  position: relative;
+
+  z-index: 2;
+
+  font-size: clamp(86px, 14.5vw, 175px);
+
   font-weight: 200;
+
   letter-spacing: -7px;
-  line-height: .95;
+
+  line-height: 1;
+
+  font-variant-numeric: tabular-nums;
+
+  color: rgba(255, 255, 255, .94);
+
+  text-shadow:
+    0 2px 2px rgba(255, 255, 255, .25),
+    0 8px 25px rgba(0, 0, 0, .28);
 }
 
-/* ホームのリマインダー */
-#homeReminderList {
-  width: 470px;
-  max-width: 70vw;
-  margin: 18px auto 0;
+
+/* =========================================================
+   HOME リマインダー
+========================================================= */
+
+#homeReminderArea {
+  width: min(500px, 68vw);
+
+  margin: 15px auto 0;
+
+  padding: 13px 20px;
+
+  border: 1px solid rgba(255, 255, 255, .20);
+  border-radius: 28px;
+
   text-align: left;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, .15),
+      rgba(255, 255, 255, .055)
+    );
+
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .25),
+    0 15px 40px rgba(0, 0, 0, .16);
+
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.homeReminderHeader {
+  margin-bottom: 6px;
+
+  color: rgba(255, 255, 255, .62);
+
+  font-size: 12px;
 }
 
 .homeReminder {
+  min-height: 36px;
+
   display: flex;
+
   align-items: center;
-  gap: 12px;
-  min-height: 38px;
-  font-size: 19px;
+
+  gap: 11px;
 }
 
-.homeReminder time {
-  margin-left: auto;
-  opacity: .7;
-}
+.homeReminder button {
+  width: 23px;
+  height: 23px;
 
-.circleCheck {
-  width: 25px;
-  height: 25px;
-  flex: 0 0 25px;
-  border: 2px solid rgba(255,255,255,.85);
+  flex: 0 0 23px;
+
+  border: 2px solid rgba(255, 255, 255, .80);
   border-radius: 50%;
+
   background: transparent;
 }
 
-.circleCheck.done {
-  background: rgba(255,255,255,.28);
+.homeReminder button.completed {
+  background: rgba(255, 255, 255, .85);
 }
 
-/* 各機能画面 */
+.homeReminder span {
+  flex: 1;
+
+  font-size: 16px;
+}
+
+.homeReminder time {
+  color: rgba(255, 255, 255, .65);
+
+  font-size: 14px;
+}
+
+.emptyMessage {
+  padding: 8px 0;
+
+  text-align: center;
+
+  color: rgba(255, 255, 255, .50);
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   共通パネル
+========================================================= */
+
 .glassPanel,
+.settingsPanel,
 .weatherPanel {
   position: absolute;
-  inset: 16px;
-  border: 1px solid rgba(255,255,255,.16);
-  border-radius: 38px;
-  background: linear-gradient(
-    145deg,
-    rgba(30,30,30,.58),
-    rgba(7,7,7,.40)
-  );
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  box-shadow: inset 0 1px rgba(255,255,255,.2);
+
+  inset: 15px;
+
+  overflow: hidden;
+
+  border-radius: 36px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(35, 31, 32, .58),
+      rgba(7, 9, 13, .52)
+    );
 }
 
-.glassPanel h1 {
-  margin: 0;
-  padding-top: 31px;
-  text-align: center;
-  font-size: 27px;
-}
+.pageHeader {
+  position: relative;
 
-.centerContent {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80%;
-  text-align: center;
-}
+  height: 88px;
 
-.featureIcon {
-  font-size: 60px;
-}
-
-/* タイマー・ストップウォッチ */
-.largeTime {
-  margin-top: 55px;
-  text-align: center;
-  font-size: clamp(70px, 13vw, 145px);
-  font-weight: 200;
-  font-variant-numeric: tabular-nums;
-}
-
-.buttonRow {
   display: flex;
+
+  align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-top: 20px;
 }
 
-.buttonRow button,
-.musicCenter button {
-  min-width: 105px;
-  padding: 12px 20px;
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 25px;
+.pageHeader h1 {
+  margin: 0;
+
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.addButton {
+  position: absolute;
+
+  top: 23px;
+  right: 25px;
+
+  width: 52px;
+  height: 52px;
+
+  padding: 0;
+
+  border: 1px solid rgba(255, 255, 255, .20);
+  border-radius: 50%;
+
   color: white;
-  background: rgba(255,255,255,.10);
+
+  background: rgba(255, 255, 255, .10);
+
+  font-size: 29px;
+  font-weight: 300;
+
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
-/* 世界時計 */
+
+/* =========================================================
+   空表示
+========================================================= */
+
+.emptyCenter {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 80%;
+
+  text-align: center;
+
+  color: rgba(255, 255, 255, .58);
+}
+
+.emptyCenter h2 {
+  margin: 12px 0 5px;
+
+  color: rgba(255, 255, 255, .86);
+
+  font-size: 22px;
+}
+
+.emptyCenter p {
+  margin: 0;
+}
+
+.largeFeatureIcon {
+  font-size: 55px;
+}
+
+
+/* =========================================================
+   アラーム・リスト
+========================================================= */
+
+.contentList {
+  width: min(690px, 80%);
+
+  max-height: calc(100vh - 125px);
+
+  margin: 8px auto 0;
+
+  overflow-y: auto;
+
+  padding-bottom: 40px;
+
+  scrollbar-width: thin;
+}
+
+.alarmItem,
+.reminderItem {
+  display: flex;
+
+  align-items: center;
+
+  min-height: 70px;
+
+  margin-bottom: 10px;
+
+  padding: 12px 20px;
+
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 22px;
+
+  background: rgba(255, 255, 255, .08);
+}
+
+.alarmTime {
+  font-size: 32px;
+  font-weight: 300;
+}
+
+.alarmInfo {
+  margin-left: 15px;
+
+  color: var(--text-soft);
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   タイマー
+========================================================= */
+
+.timerContent,
+.stopwatchContent {
+  padding-top: 20px;
+
+  text-align: center;
+}
+
+.miniClockGlass {
+  width: fit-content;
+
+  min-width: 390px;
+
+  margin: 5px auto 22px;
+
+  padding: 5px 35px 10px;
+
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 45px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, .17),
+      rgba(255, 255, 255, .045)
+    );
+
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .32),
+    0 20px 45px rgba(0, 0, 0, .20);
+
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+}
+
+.largeTime {
+  font-size: clamp(62px, 10vw, 112px);
+
+  font-weight: 200;
+
+  line-height: 1.1;
+
+  font-variant-numeric: tabular-nums;
+}
+
+.presetRow,
+.actionRow {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 11px;
+
+  margin-top: 13px;
+}
+
+.presetRow button,
+.actionRow button,
+.settingButtons button,
+.musicSelectButton {
+  min-width: 105px;
+
+  padding: 11px 19px;
+
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 24px;
+
+  color: white;
+
+  background: rgba(255, 255, 255, .10);
+
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .15);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.primaryAction {
+  background: rgba(35, 190, 105, .65) !important;
+}
+
+
+/* =========================================================
+   世界時計
+========================================================= */
+
 .worldList {
-  width: min(650px, 80%);
-  margin: 50px auto;
+  width: min(680px, 80%);
+
+  max-height: calc(100vh - 120px);
+
+  margin: 5px auto;
+
+  overflow-y: auto;
 }
 
 .worldItem {
   display: flex;
+
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
-  margin-bottom: 12px;
-  border-radius: 23px;
-  background: rgba(255,255,255,.08);
+
+  min-height: 70px;
+
+  margin-bottom: 9px;
+
+  padding: 11px 23px;
+
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, .075);
 }
 
-.worldItem span {
-  font-size: 20px;
+.worldItem div {
+  display: flex;
+  flex-direction: column;
 }
 
 .worldItem strong {
+  font-size: 18px;
+}
+
+.worldItem small {
+  margin-top: 4px;
+
+  color: rgba(255, 255, 255, .50);
+}
+
+.worldItem > span {
   font-size: 32px;
-  font-weight: 350;
+  font-weight: 300;
+
+  font-variant-numeric: tabular-nums;
 }
 
-/* リマインダー */
-#addReminderButton,
-#addCityButton {
-  position: absolute;
-  top: 23px;
-  right: 25px;
-  z-index: 50;
-  width: 54px;
-  height: 54px;
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 50%;
-  color: white;
-  background: rgba(255,255,255,.10);
-  font-size: 29px;
-}
 
-#reminderList {
-  width: min(650px, 80%);
-  margin: 50px auto;
-}
+/* =========================================================
+   リマインダー
+========================================================= */
 
 .reminderItem {
-  display: flex;
-  align-items: center;
   gap: 13px;
-  margin-bottom: 10px;
-  padding: 16px 20px;
-  border-radius: 22px;
-  background: rgba(255,255,255,.08);
 }
 
-.reminderItem button {
+.reminderCheck {
   width: 25px;
   height: 25px;
-  border: 2px solid white;
+
+  flex: 0 0 25px;
+
+  border: 2px solid rgba(255, 255, 255, .82);
   border-radius: 50%;
+
   background: transparent;
 }
 
-/* 天気 */
+.reminderCheck.completed {
+  background: rgba(255, 255, 255, .85);
+}
+
+.reminderBody {
+  flex: 1;
+}
+
+.reminderTitle {
+  font-size: 17px;
+}
+
+.reminderMeta {
+  margin-top: 4px;
+
+  color: rgba(255, 255, 255, .55);
+
+  font-size: 12px;
+}
+
+.deleteReminder {
+  width: 42px;
+  height: 42px;
+
+  border: 0;
+  border-radius: 14px;
+
+  color: white;
+
+  background: rgba(255, 65, 65, .72);
+
+  font-size: 18px;
+}
+
+
+/* =========================================================
+   天気
+========================================================= */
+
 .weatherPanel {
   background:
     radial-gradient(
       circle at 50% 20%,
-      rgba(96,155,205,.65),
-      transparent 43%
+      rgba(93, 174, 232, .56),
+      transparent 46%
     ),
     linear-gradient(
       180deg,
-      rgba(34,80,120,.85),
-      rgba(9,24,40,.82)
+      rgba(27, 105, 165, .70),
+      rgba(10, 31, 54, .70)
     );
 }
 
-.weatherCenter {
-  padding-top: 75px;
+.weatherMain {
+  margin-top: -5px;
+
   text-align: center;
 }
 
-.weatherCenter h2 {
-  margin: 0;
-  font-size: 30px;
+.weatherLargeIcon {
+  height: 68px;
+
+  font-size: 59px;
+}
+
+.weatherMain h2 {
+  margin: 7px 0 0;
+
+  font-size: 28px;
 }
 
 #weatherTemp {
-  font-size: clamp(90px, 14vw, 150px);
+  margin-top: -7px;
+
+  font-size: clamp(76px, 11vw, 125px);
+
   font-weight: 200;
+
+  line-height: 1;
 }
 
 #weatherCondition {
-  font-size: 20px;
+  margin-top: 4px;
+
+  font-size: 18px;
 }
 
-.smallNote {
-  margin-top: 30px;
-  opacity: .55;
+.weatherDetails {
+  width: min(560px, 76%);
+
+  margin: 24px auto 0;
+
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 20px;
+
+  overflow: hidden;
+
+  background: rgba(255, 255, 255, .08);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-/* ミュージック */
+.weatherDetails div {
+  padding: 12px 8px;
+
+  border-right: 1px solid rgba(255, 255, 255, .12);
+}
+
+.weatherDetails div:last-child {
+  border-right: 0;
+}
+
+.weatherDetails small,
+.weatherDetails strong {
+  display: block;
+}
+
+.weatherDetails small {
+  color: rgba(255, 255, 255, .58);
+
+  font-size: 11px;
+}
+
+.weatherDetails strong {
+  margin-top: 4px;
+
+  font-size: 18px;
+}
+
+.weatherUpdated {
+  margin-top: 11px;
+
+  color: rgba(255, 255, 255, .48);
+
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   ミュージック
+========================================================= */
+
 .musicCenter {
-  width: min(500px, 75%);
-  margin: 50px auto;
+  width: min(580px, 78%);
+
+  margin: 8px auto 0;
+
   text-align: center;
 }
 
-.musicIcon {
-  font-size: 70px;
+.albumArt {
+  width: 150px;
+  height: 150px;
+
+  margin: 0 auto 12px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 27px;
+
+  background:
+    radial-gradient(
+      circle at 30% 30%,
+      rgba(255, 174, 116, .80),
+      transparent 38%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(130, 70, 84, .90),
+      rgba(31, 27, 50, .90)
+    );
+
+  box-shadow:
+    0 22px 45px rgba(0, 0, 0, .26);
+
+  font-size: 60px;
+}
+
+.musicInfo h2 {
+  margin: 7px 0 0;
+
+  font-size: 21px;
+}
+
+.musicInfo p {
+  margin: 4px 0 13px;
+
+  color: rgba(255, 255, 255, .52);
+}
+
+.musicSelectButton {
+  margin-bottom: 11px;
 }
 
 #audioPlayer {
   display: block;
+
+  width: min(500px, 100%);
+
+  margin: 0 auto;
+}
+
+
+/* =========================================================
+   設定
+========================================================= */
+
+.settingsPanel {
+  overflow: hidden;
+}
+
+.settingsLayout {
+  height: calc(100% - 88px);
+
+  display: grid;
+
+  grid-template-columns: 270px 1fr;
+
+  gap: 16px;
+
+  padding: 0 24px 24px;
+}
+
+.settingsNav {
+  min-height: 0;
+
+  overflow-y: auto;
+
+  padding-right: 5px;
+}
+
+.settingsNavButton {
   width: 100%;
-  margin-top: 25px;
+
+  margin-bottom: 8px;
+
+  padding: 15px 17px;
+
+  border: 0;
+  border-radius: 15px;
+
+  color: rgba(255, 255, 255, .86);
+
+  text-align: left;
+
+  background: transparent;
 }
 
-/* 設定 */
-.settingsList {
-  width: min(650px, 80%);
-  margin: 50px auto;
+.settingsNavButton.active {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(89, 130, 205, .48),
+      rgba(255, 255, 255, .08)
+    );
 }
 
-.settingItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.settingsContent {
+  min-height: 0;
+
+  overflow-y: auto;
+
+  padding: 4px 12px 40px;
+}
+
+.settingSection {
+  display: none;
+}
+
+.settingSection.active {
+  display: block;
+}
+
+.settingSection h2 {
+  margin: 5px 0 22px;
+
+  font-size: 22px;
+}
+
+.settingSection h3 {
+  margin: 15px 0 13px;
+
+  color: rgba(255, 255, 255, .72);
+
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.settingRow,
+.sliderSetting {
+  width: 100%;
+
+  min-height: 60px;
+
   margin-bottom: 10px;
-  padding: 18px 22px;
-  border-radius: 22px;
-  background: rgba(255,255,255,.08);
+
+  padding: 12px 18px;
+
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 17px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 15px;
+
+  background: rgba(255, 255, 255, .065);
 }
 
-/* メニュー背景 */
+.settingRow span,
+.sliderSetting span {
+  flex: 1;
+}
+
+.settingRow input[type="checkbox"] {
+  width: 23px;
+  height: 23px;
+
+  accent-color: #30d17a;
+}
+
+.settingRow select {
+  padding: 8px 13px;
+
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 13px;
+
+  color: white;
+
+  background: rgba(255, 255, 255, .10);
+}
+
+.sliderSetting input[type="range"] {
+  width: min(300px, 45%);
+}
+
+.sliderSetting strong {
+  width: 55px;
+
+  text-align: right;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   時計色
+========================================================= */
+
+.colorChoices {
+  display: flex;
+
+  gap: 13px;
+
+  flex-wrap: wrap;
+
+  margin-bottom: 18px;
+}
+
+.colorChoice {
+  width: 42px;
+  height: 42px;
+
+  padding: 0;
+
+  border: 2px solid rgba(255, 255, 255, .22);
+  border-radius: 50%;
+
+  box-shadow:
+    inset 0 2px 7px rgba(255, 255, 255, .42),
+    0 5px 15px rgba(0, 0, 0, .18);
+}
+
+.colorChoice.active {
+  outline: 3px solid rgba(255, 255, 255, .82);
+  outline-offset: 3px;
+}
+
+.color-white {
+  background: linear-gradient(145deg, #eef7ff, #7898ad);
+}
+
+.color-blue {
+  background: linear-gradient(145deg, #57c8ff, #0057df);
+}
+
+.color-purple {
+  background: linear-gradient(145deg, #df76ff, #6934a7);
+}
+
+.color-pink {
+  background: linear-gradient(145deg, #ff8cb9, #d43d71);
+}
+
+.color-orange {
+  background: linear-gradient(145deg, #ffc275, #d46c25);
+}
+
+.color-green {
+  background: linear-gradient(145deg, #67e7a2, #178c58);
+}
+
+.clockPreviewArea {
+  min-height: 140px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+}
+
+.clockPreview {
+  min-width: 310px;
+
+  padding: 13px 30px;
+
+  border-radius: 40px;
+
+  font-size: 68px;
+
+  font-weight: 200;
+
+  letter-spacing: -3px;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   壁紙設定
+========================================================= */
+
+.wallpaperPreview {
+  width: min(480px, 90%);
+  aspect-ratio: 16 / 7;
+
+  margin-bottom: 16px;
+
+  border: 1px solid rgba(255, 255, 255, .17);
+  border-radius: 22px;
+
+  background:
+    radial-gradient(
+      circle at 20% 45%,
+      rgba(255, 176, 100, .72),
+      transparent 30%
+    ),
+    linear-gradient(
+      145deg,
+      #5a3527,
+      #19131a
+    );
+
+  background-size: cover;
+  background-position: center;
+
+  box-shadow:
+    0 15px 40px rgba(0, 0, 0, .20);
+}
+
+.settingButtons {
+  display: flex;
+
+  gap: 10px;
+
+  margin-bottom: 18px;
+}
+
+
+/* =========================================================
+   データ管理
+========================================================= */
+
+.dataCard {
+  padding: 20px;
+
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, .06);
+}
+
+.dataCard p {
+  color: rgba(255, 255, 255, .65);
+}
+
+.dangerButton {
+  padding: 11px 18px;
+
+  border: 1px solid rgba(255, 80, 80, .30);
+  border-radius: 18px;
+
+  color: white;
+
+  background: rgba(220, 55, 55, .55);
+}
+
+
+/* =========================================================
+   バージョン
+========================================================= */
+
+#setting-version {
+  text-align: center;
+}
+
+.versionLogo {
+  margin-top: 40px;
+
+  font-size: 65px;
+
+  font-weight: 700;
+
+  letter-spacing: -4px;
+}
+
+.versionNote {
+  color: rgba(255, 255, 255, .45);
+}
+
+
+/* =========================================================
+   モーダル
+========================================================= */
+
+.modal {
+  display: none;
+
+  position: fixed;
+  inset: 0;
+
+  z-index: 3000;
+
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, .34);
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modalCard {
+  width: min(430px, 80vw);
+
+  padding: 24px;
+
+  border-radius: 27px;
+
+  background: rgba(28, 27, 31, .72);
+}
+
+.modalCard h2 {
+  margin: 0 0 20px;
+
+  text-align: center;
+}
+
+.modalCard label {
+  display: block;
+
+  margin-bottom: 13px;
+
+  color: rgba(255, 255, 255, .65);
+
+  font-size: 13px;
+}
+
+.modalCard input {
+  display: block;
+
+  width: 100%;
+
+  margin-top: 6px;
+
+  padding: 12px 14px;
+
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 15px;
+
+  outline: none;
+
+  color: white;
+
+  background: rgba(255, 255, 255, .09);
+}
+
+.modalCard input::placeholder {
+  color: rgba(255, 255, 255, .40);
+}
+
+.modalButtons {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 18px;
+}
+
+.modalButtons button {
+  padding: 10px 17px;
+
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 17px;
+
+  color: white;
+
+  background: rgba(255, 255, 255, .09);
+}
+
+#weatherSearchStatus {
+  margin-top: 13px;
+
+  text-align: center;
+
+  color: rgba(255, 255, 255, .60);
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   サイドメニュー背景
+========================================================= */
+
 #menuOverlay {
   position: fixed;
   inset: 0;
+
   z-index: 800;
+
   opacity: 0;
+
   pointer-events: none;
-  background: rgba(0,0,0,.18);
-  transition: .3s;
+
+  background: rgba(0, 0, 0, .22);
+
+  transition: opacity .28s ease;
 }
 
 #menuOverlay.show {
   opacity: 1;
+
   pointer-events: auto;
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-/* サイドメニュー */
+
+/* =========================================================
+   サイドメニュー
+========================================================= */
+
 #sideMenu {
   position: fixed;
+
   top: 0;
   left: 0;
+
   z-index: 900;
-  width: 320px;
-  max-width: 72vw;
+
+  width: 330px;
+  max-width: 74vw;
   height: 100%;
-  padding: 34px 20px;
+
+  padding: 25px 16px 20px;
+
   transform: translateX(-105%);
-  border-right: 1px solid rgba(255,255,255,.22);
-  background: linear-gradient(
-    145deg,
-    rgba(60,60,60,.65),
-    rgba(8,8,8,.58)
-  );
-  backdrop-filter: blur(38px);
-  -webkit-backdrop-filter: blur(38px);
-  transition: transform .4s cubic-bezier(.2,.9,.2,1);
+
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 0;
+
+  border-radius: 0 30px 30px 0;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(43, 37, 40, .78),
+      rgba(10, 10, 14, .72)
+    );
+
+  transition:
+    transform .38s cubic-bezier(.2, .9, .2, 1);
 }
 
 #sideMenu.show {
   transform: translateX(0);
 }
 
-#sideMenu h2 {
-  margin: 0 0 22px 12px;
-  font-size: 28px;
+.menuTop {
+  height: 55px;
+
+  display: flex;
+
+  align-items: center;
+
+  padding-left: 15px;
 }
 
-#sideMenu button {
+.menuTop h2 {
+  margin: 0;
+
+  font-size: 27px;
+}
+
+.menuScroll {
+  height: calc(100% - 55px);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 5px 4px 35px;
+
+  overscroll-behavior: contain;
+
+  -webkit-overflow-scrolling: touch;
+
+  scrollbar-width: thin;
+}
+
+.menuScroll button {
   width: 100%;
-  padding: 12px 15px;
+
+  min-height: 52px;
+
+  margin-bottom: 4px;
+
+  padding: 10px 14px;
+
   border: 0;
   border-radius: 16px;
-  text-align: left;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
   color: white;
+
+  text-align: left;
+
   background: transparent;
-  font-size: 17px;
+
+  font-size: 16px;
 }
 
-#sideMenu button:active {
-  background: rgba(255,255,255,.14);
+.menuScroll button:hover {
+  background: rgba(255, 255, 255, .08);
 }
 
-.divider {
+.menuScroll button span {
+  flex: 1;
+}
+
+.menuDivider {
   height: 1px;
-  margin: 10px;
-  background: rgba(255,255,255,.15);
+
+  margin: 10px 12px;
+
+  background: rgba(255, 255, 255, .12);
+}
+
+
+/* =========================================================
+   小さめ横画面対応
+========================================================= */
+
+@media (orientation: landscape) and (max-height: 520px) {
+
+  #menuButton,
+  #closeButton {
+    top: 17px;
+
+    width: 54px;
+    height: 54px;
+  }
+
+  #weatherMini {
+    top: 17px;
+
+    height: 54px;
+  }
+
+  #island {
+    top: 13px;
+
+    height: 43px;
+  }
+
+  .homeCenter {
+    transform: translate(-50%, -46%);
+  }
+
+  #dateText {
+    margin-bottom: 6px;
+  }
+
+  .clockGlass {
+    min-width: min(520px, 68vw);
+
+    border-radius: 48px;
+  }
+
+  #clockText {
+    font-size: clamp(76px, 13vw, 135px);
+  }
+
+  #homeReminderArea {
+    margin-top: 10px;
+
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .pageHeader {
+    height: 70px;
+  }
+
+  .pageHeader h1 {
+    font-size: 22px;
+  }
+
+  .addButton {
+    top: 12px;
+  }
+
+  .settingsLayout {
+    height: calc(100% - 70px);
+  }
+
+  .weatherLargeIcon {
+    height: 50px;
+
+    font-size: 45px;
+  }
+
+  #weatherTemp {
+    font-size: 80px;
+  }
+
+  .weatherDetails {
+    margin-top: 13px;
+  }
+
+  .albumArt {
+    width: 120px;
+    height: 120px;
+  }
 }
