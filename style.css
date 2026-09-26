@@ -1,942 +1,806 @@
-/* ==============================
-   Luma β 0.2
-================================ */
-
-let currentPage = "home";
-
-let showSeconds = false;
-
-
-/* 時計 */
-
-function updateClock() {
-
-  const now = new Date();
-
-  const h =
-    String(now.getHours()).padStart(2, "0");
-
-  const m =
-    String(now.getMinutes()).padStart(2, "0");
-
-  const s =
-    String(now.getSeconds()).padStart(2, "0");
-
-
-  document.getElementById("clock").textContent =
-    showSeconds
-      ? `${h}:${m}:${s}`
-      : `${h}:${m}`;
-
-
-  const weekdays =
-    ["日","月","火","水","木","金","土"];
-
-  document.getElementById("date").textContent =
-    `${now.getMonth() + 1}月${now.getDate()}日（${weekdays[now.getDay()]}）`;
-
-
-  updateWorldClocks();
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-updateClock();
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 
-setInterval(updateClock, 1000);
+  background: #080808;
+  color: white;
 
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
 
-
-/* メニュー */
-
-const menuButton =
-  document.getElementById("menuButton");
-
-const closePageButton =
-  document.getElementById("closePageButton");
-
-const sideMenu =
-  document.getElementById("sideMenu");
-
-const menuOverlay =
-  document.getElementById("menuOverlay");
-
-
-menuButton.addEventListener("click", () => {
-
-  sideMenu.classList.add("show");
-
-  menuOverlay.classList.add("show");
-
-});
-
-
-menuOverlay.addEventListener(
-  "click",
-  closeMenu
-);
-
-
-function closeMenu() {
-
-  sideMenu.classList.remove("show");
-
-  menuOverlay.classList.remove("show");
-
+button {
+  font: inherit;
+  cursor: pointer;
 }
 
 
+/* =========================
+   背景
+========================= */
 
-/* ページ切替 */
+.wallpaper {
+  position: fixed;
+  inset: 0;
 
-function openPage(name) {
-
-  currentPage = name;
-
-
-  document
-    .querySelectorAll(".page")
-    .forEach(page => {
-
-      page.classList.remove("active");
-
-    });
-
-
-  const page =
-    document.getElementById(
-      name + "Page"
+  background:
+    radial-gradient(
+      circle at 18% 45%,
+      rgba(255, 190, 115, .78),
+      transparent 33%
+    ),
+    radial-gradient(
+      circle at 78% 65%,
+      rgba(170, 100, 82, .70),
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 55% 15%,
+      rgba(120, 100, 135, .35),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      #4b3528,
+      #181313 55%,
+      #070707
     );
 
+  transform: scale(1.08);
+}
 
-  if (page) {
-    page.classList.add("active");
+
+/* =========================
+   縦画面
+========================= */
+
+#portraitWarning {
+  display: none;
+
+  position: fixed;
+  inset: 0;
+
+  z-index: 99999;
+
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+
+  background:
+    radial-gradient(
+      circle at 50% 40%,
+      #4b3528,
+      #080808
+    );
+}
+
+.rotateBox {
+  padding: 35px 45px;
+
+  text-align: center;
+
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 32px;
+
+  background: rgba(255,255,255,.09);
+
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+.rotateIcon {
+  font-size: 48px;
+}
+
+.rotateTitle {
+  margin-top: 10px;
+
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.rotateText {
+  margin-top: 10px;
+
+  opacity: .75;
+}
+
+
+@media (orientation: portrait) {
+
+  #app {
+    display: none;
   }
 
-
-  const isHome =
-    name === "home";
-
-
-  /*
-    ここが今回の重要修正！
-
-    HOME
-    → ☰表示
-    → ×非表示
-
-    その他
-    → ☰非表示
-    → ×表示
-  */
-
-  menuButton.style.display =
-    isHome
-      ? "flex"
-      : "none";
-
-
-  closePageButton.style.display =
-    isHome
-      ? "none"
-      : "block";
-
-
-  document.getElementById(
-    "weatherMini"
-  ).style.display =
-    isHome
-      ? "flex"
-      : "none";
-
-
-  closeMenu();
-}
-
-
-
-/* ホームのチェック */
-
-document
-  .querySelectorAll(".check")
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        button.classList.toggle("done");
-
-      }
-    );
-
-  });
-
-
-
-/* Dynamic Island */
-
-const island =
-  document.getElementById("island");
-
-const islandLeft =
-  document.getElementById("islandLeft");
-
-const islandCenter =
-  document.getElementById("islandCenter");
-
-const islandRight =
-  document.getElementById("islandRight");
-
-
-let islandMode = "idle";
-
-
-function setIsland(mode) {
-
-  islandMode = mode;
-
-  island.className =
-    "island " + mode;
-
-}
-
-
-function resetIsland() {
-
-  setIsland("idle");
-
-  islandLeft.textContent = "";
-
-  islandCenter.textContent = "";
-
-  islandRight.textContent = "";
-
-}
-
-
-function expandIsland() {
-
-  if (islandMode === "music") {
-
-    setIsland("expanded");
-
-    islandCenter.textContent =
-      "ミュージック";
-
-    setTimeout(() => {
-
-      setIsland("music");
-
-      islandCenter.textContent = "";
-
-    }, 2200);
-
+  #portraitWarning {
+    display: flex;
   }
 
 }
 
 
+/* =========================
+   ページ
+========================= */
 
-/* 通知 */
+.page {
+  position: fixed;
+  inset: 0;
 
-function showNotification(
-  title,
-  message
-) {
+  z-index: 10;
 
-  document.getElementById(
-    "notificationTitle"
-  ).textContent = title;
+  display: none;
+}
 
-
-  document.getElementById(
-    "notificationText"
-  ).textContent = message;
-
-
-  document.getElementById(
-    "islandNotification"
-  ).classList.add("show");
-
+.page.active {
+  display: block;
 }
 
 
-function closeNotification() {
+/* =========================
+   ガラス丸ボタン
+========================= */
 
-  document.getElementById(
-    "islandNotification"
-  ).classList.remove("show");
+.roundGlass {
+  border: 1px solid rgba(255,255,255,.25);
 
+  color: white;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.19),
+      rgba(255,255,255,.06)
+    );
+
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.35),
+    0 10px 30px rgba(0,0,0,.18);
 }
 
 
-function snoozeNotification() {
+/* =========================
+   ☰
+========================= */
 
-  closeNotification();
+#menuButton {
+  position: fixed;
 
+  top: 25px;
+  left: 28px;
+
+  z-index: 300;
+
+  width: 62px;
+  height: 62px;
+
+  border-radius: 50%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+}
+
+#menuButton span {
+  display: block;
+
+  width: 27px;
+  height: 3px;
+
+  border-radius: 10px;
+
+  background: white;
 }
 
 
+/* =========================
+   ×
+========================= */
 
-/* ==============================
+#closeButton {
+  position: fixed;
+
+  top: 25px;
+  left: 28px;
+
+  z-index: 300;
+
+  width: 62px;
+  height: 62px;
+
+  border-radius: 50%;
+
+  display: none;
+
+  font-size: 31px;
+}
+
+
+/* =========================
+   Dynamic Island
+========================= */
+
+#island {
+  position: fixed;
+
+  top: 18px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  z-index: 500;
+
+  width: 130px;
+  height: 48px;
+
+  padding: 0 18px;
+
+  border-radius: 28px;
+
+  background: black;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  transition:
+    width .4s cubic-bezier(.2,.9,.2,1.15),
+    height .4s cubic-bezier(.2,.9,.2,1.15);
+}
+
+#island.timer {
+  width: 260px;
+}
+
+#island.music {
+  width: 190px;
+}
+
+#islandRight {
+  margin-left: auto;
+}
+
+
+/* =========================
+   天気ミニ
+========================= */
+
+#weatherMini {
+  position: fixed;
+
+  top: 25px;
+  right: 28px;
+
+  z-index: 250;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 145px;
+
+  padding: 9px 17px;
+
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 28px;
+
+  color: white;
+
+  background: rgba(255,255,255,.09);
+
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+.weatherIcon {
+  font-size: 25px;
+}
+
+.weatherText {
+  text-align: left;
+}
+
+.weatherText strong {
+  display: block;
+
+  font-size: 22px;
+}
+
+.weatherText small {
+  display: block;
+
+  opacity: .65;
+}
+
+
+/* =========================
+   HOME
+========================= */
+
+.homeCenter {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  width: 90%;
+
+  transform: translate(-50%, -45%);
+
+  text-align: center;
+}
+
+#dateText {
+  font-size: clamp(20px, 3vw, 38px);
+
+  font-weight: 600;
+}
+
+#clockText {
+  font-size: clamp(100px, 19vw, 225px);
+
+  font-weight: 200;
+
+  letter-spacing: -7px;
+
+  line-height: .95;
+}
+
+
+/* リマインダー */
+
+#homeReminderList {
+  width: 470px;
+
+  max-width: 70vw;
+
+  margin: 18px auto 0;
+
+  text-align: left;
+}
+
+.homeReminder {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-height: 38px;
+
+  font-size: 19px;
+}
+
+.homeReminder time {
+  margin-left: auto;
+
+  opacity: .7;
+}
+
+.circleCheck {
+  width: 25px;
+  height: 25px;
+
+  flex: 0 0 25px;
+
+  border: 2px solid rgba(255,255,255,.85);
+  border-radius: 50%;
+
+  background: transparent;
+}
+
+.circleCheck.done {
+  background: rgba(255,255,255,.28);
+}
+
+
+/* =========================
+   各ページ
+========================= */
+
+.glassPanel,
+.weatherPanel {
+  position: absolute;
+
+  inset: 16px;
+
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 38px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(30,30,30,.58),
+      rgba(7,7,7,.40)
+    );
+
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.2);
+}
+
+.glassPanel h1 {
+  margin: 0;
+
+  padding-top: 31px;
+
+  text-align: center;
+
+  font-size: 27px;
+}
+
+.centerContent {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 80%;
+
+  text-align: center;
+}
+
+.featureIcon {
+  font-size: 60px;
+}
+
+
+/* =========================
    タイマー
-================================ */
+========================= */
 
-let selectedTimerSeconds = 300;
+.largeTime {
+  margin-top: 55px;
 
-let timerSeconds = 300;
+  text-align: center;
 
-let timerInterval = null;
+  font-size: clamp(70px, 13vw, 145px);
 
+  font-weight: 200;
 
-function setTimer(seconds) {
+  font-variant-numeric: tabular-nums;
+}
 
-  pauseTimer();
+.buttonRow {
+  display: flex;
+  justify-content: center;
 
-  selectedTimerSeconds = seconds;
+  gap: 12px;
 
-  timerSeconds = seconds;
+  margin-top: 20px;
+}
 
-  drawTimer();
+.buttonRow button,
+.musicCenter button {
+  min-width: 105px;
 
+  padding: 12px 20px;
+
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 25px;
+
+  color: white;
+
+  background: rgba(255,255,255,.10);
+
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 
-function drawTimer() {
-
-  const minutes =
-    Math.floor(timerSeconds / 60);
-
-  const seconds =
-    timerSeconds % 60;
-
-
-  const text =
-    `${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
-
-
-  document.getElementById(
-    "timerDisplay"
-  ).textContent = text;
-
-
-  if (timerInterval) {
-
-    setIsland("timer");
-
-    islandLeft.textContent = "◴";
-
-    islandCenter.textContent = "";
-
-    islandRight.textContent = text;
-
-  }
-
-}
-
-
-function startTimer() {
-
-  if (timerInterval) {
-    return;
-  }
-
-
-  setIsland("timer");
-
-  islandLeft.textContent = "◴";
-
-  islandCenter.textContent = "";
-
-
-  drawTimer();
-
-
-  timerInterval =
-    setInterval(() => {
-
-      timerSeconds--;
-
-      drawTimer();
-
-
-      if (timerSeconds <= 0) {
-
-        clearInterval(timerInterval);
-
-        timerInterval = null;
-
-        timerSeconds = 0;
-
-        drawTimer();
-
-        resetIsland();
-
-
-        showNotification(
-          "タイマー",
-          "タイマーが終了しました"
-        );
-
-      }
-
-    }, 1000);
-
-}
-
-
-function pauseTimer() {
-
-  if (timerInterval) {
-
-    clearInterval(timerInterval);
-
-    timerInterval = null;
-
-  }
-
-}
-
-
-function resetTimer() {
-
-  pauseTimer();
-
-  timerSeconds =
-    selectedTimerSeconds;
-
-  drawTimer();
-
-  resetIsland();
-
-}
-
-
-
-/* ==============================
-   ストップウォッチ
-================================ */
-
-let stopwatchStart = 0;
-
-let stopwatchElapsed = 0;
-
-let stopwatchInterval = null;
-
-
-function startStopwatch() {
-
-  if (stopwatchInterval) {
-    return;
-  }
-
-
-  stopwatchStart =
-    Date.now() - stopwatchElapsed;
-
-
-  stopwatchInterval =
-    setInterval(() => {
-
-      stopwatchElapsed =
-        Date.now() - stopwatchStart;
-
-      drawStopwatch();
-
-    }, 100);
-
-}
-
-
-function pauseStopwatch() {
-
-  if (stopwatchInterval) {
-
-    clearInterval(stopwatchInterval);
-
-    stopwatchInterval = null;
-
-  }
-
-}
-
-
-function resetStopwatch() {
-
-  pauseStopwatch();
-
-  stopwatchElapsed = 0;
-
-  drawStopwatch();
-
-}
-
-
-function drawStopwatch() {
-
-  const totalTenths =
-    Math.floor(stopwatchElapsed / 100);
-
-  const minutes =
-    Math.floor(totalTenths / 600);
-
-  const seconds =
-    Math.floor(
-      (totalTenths % 600) / 10
-    );
-
-  const tenths =
-    totalTenths % 10;
-
-
-  document.getElementById(
-    "stopwatchDisplay"
-  ).textContent =
-    `${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}.${tenths}`;
-
-}
-
-drawStopwatch();
-
-
-
-/* ==============================
+/* =========================
    世界時計
-================================ */
+========================= */
 
-function getTimeInZone(zone) {
+.worldList {
+  width: min(650px, 80%);
 
-  return new Intl.DateTimeFormat(
-    "ja-JP",
-    {
-      timeZone: zone,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    }
-  ).format(new Date());
+  margin: 50px auto;
+}
 
+.worldItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 18px 24px;
+
+  margin-bottom: 12px;
+
+  border-radius: 23px;
+
+  background: rgba(255,255,255,.08);
+}
+
+.worldItem span {
+  font-size: 20px;
+}
+
+.worldItem strong {
+  font-size: 32px;
+
+  font-weight: 350;
 }
 
 
-function updateWorldClocks() {
-
-  document.getElementById(
-    "tokyoTime"
-  ).textContent =
-    getTimeInZone(
-      "Asia/Tokyo"
-    );
-
-
-  document.getElementById(
-    "londonTime"
-  ).textContent =
-    getTimeInZone(
-      "Europe/London"
-    );
-
-
-  document.getElementById(
-    "newYorkTime"
-  ).textContent =
-    getTimeInZone(
-      "America/New_York"
-    );
-
-}
-
-
-
-/* ==============================
+/* =========================
    リマインダー
-================================ */
+========================= */
 
-let reminders =
-  JSON.parse(
-    localStorage.getItem(
-      "lumaReminders"
-    )
-  ) || [];
+#addReminderButton,
+#addCityButton {
+  position: absolute;
 
+  top: 23px;
+  right: 25px;
 
-function saveReminders() {
+  z-index: 50;
 
-  localStorage.setItem(
-    "lumaReminders",
-    JSON.stringify(reminders)
-  );
+  width: 54px;
+  height: 54px;
 
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 50%;
+
+  color: white;
+
+  background: rgba(255,255,255,.10);
+
+  font-size: 29px;
+}
+
+#reminderList {
+  width: min(650px, 80%);
+
+  margin: 50px auto;
+}
+
+.reminderItem {
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  margin-bottom: 10px;
+
+  padding: 16px 20px;
+
+  border-radius: 22px;
+
+  background: rgba(255,255,255,.08);
+}
+
+.reminderItem button {
+  width: 25px;
+  height: 25px;
+
+  border: 2px solid white;
+  border-radius: 50%;
+
+  background: transparent;
 }
 
 
-function addReminder() {
-
-  const text =
-    prompt(
-      "リマインダーを入力してください"
-    );
-
-
-  if (!text) {
-    return;
-  }
-
-
-  reminders.push({
-    id: Date.now(),
-    text: text,
-    done: false
-  });
-
-
-  saveReminders();
-
-  drawReminders();
-
-}
-
-
-function completeReminder(id) {
-
-  reminders =
-    reminders.map(item => {
-
-      if (item.id === id) {
-
-        item.done = !item.done;
-
-      }
-
-      return item;
-
-    });
-
-
-  saveReminders();
-
-  drawReminders();
-
-}
-
-
-function drawReminders() {
-
-  const list =
-    document.getElementById(
-      "reminderList"
-    );
-
-
-  list.innerHTML = "";
-
-
-  if (reminders.length === 0) {
-
-    list.innerHTML =
-      `<div style="
-        text-align:center;
-        opacity:.55;
-        margin-top:60px;
-      ">
-        リマインダーはありません
-      </div>`;
-
-    return;
-
-  }
-
-
-  reminders.forEach(item => {
-
-    const row =
-      document.createElement("div");
-
-
-    row.className =
-      "reminder-item";
-
-
-    row.innerHTML = `
-      <button
-        onclick="completeReminder(${item.id})">
-      </button>
-
-      <span style="
-        ${item.done
-          ? "text-decoration:line-through;opacity:.45;"
-          : ""}
-      ">
-        ${escapeHTML(item.text)}
-      </span>
-    `;
-
-
-    list.appendChild(row);
-
-  });
-
-}
-
-
-function escapeHTML(text) {
-
-  const div =
-    document.createElement("div");
-
-  div.textContent = text;
-
-  return div.innerHTML;
-
-}
-
-drawReminders();
-
-
-
-/* ==============================
+/* =========================
    天気
-================================ */
+========================= */
 
-function changeCity() {
-
-  const city =
-    prompt(
-      "市町村名を入力してください\n例：周南市"
+.weatherPanel {
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      rgba(96,155,205,.65),
+      transparent 43%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(34,80,120,.85),
+      rgba(9,24,40,.82)
     );
+}
 
+.weatherCenter {
+  padding-top: 75px;
 
-  if (!city) {
-    return;
-  }
+  text-align: center;
+}
 
+.weatherCenter h2 {
+  margin: 0;
 
-  localStorage.setItem(
-    "lumaWeatherCity",
-    city
-  );
+  font-size: 30px;
+}
 
+#weatherTemp {
+  font-size: clamp(90px, 14vw, 150px);
 
-  document.getElementById(
-    "weatherCity"
-  ).textContent = city;
+  font-weight: 200;
+}
 
+#weatherCondition {
+  font-size: 20px;
+}
 
-  document.getElementById(
-    "weatherPageCity"
-  ).textContent = city;
+.smallNote {
+  margin-top: 30px;
 
-
-  document.getElementById(
-    "weatherDescription"
-  ).textContent =
-    "天気API接続準備完了";
-
+  opacity: .55;
 }
 
 
-const savedCity =
-  localStorage.getItem(
-    "lumaWeatherCity"
-  );
+/* =========================
+   音楽
+========================= */
 
+.musicCenter {
+  width: min(500px, 75%);
 
-if (savedCity) {
+  margin: 50px auto;
 
-  document.getElementById(
-    "weatherCity"
-  ).textContent =
-    savedCity;
+  text-align: center;
+}
 
+.musicIcon {
+  font-size: 70px;
+}
 
-  document.getElementById(
-    "weatherPageCity"
-  ).textContent =
-    savedCity;
+#audioPlayer {
+  display: block;
 
+  width: 100%;
+
+  margin-top: 25px;
 }
 
 
-
-/* ==============================
-   ミュージック
-================================ */
-
-const musicInput =
-  document.getElementById(
-    "musicFile"
-  );
-
-const audioPlayer =
-  document.getElementById(
-    "audioPlayer"
-  );
-
-
-function chooseMusic() {
-
-  musicInput.click();
-
-}
-
-
-musicInput.addEventListener(
-  "change",
-  event => {
-
-    const file =
-      event.target.files[0];
-
-
-    if (!file) {
-      return;
-    }
-
-
-    const url =
-      URL.createObjectURL(file);
-
-
-    audioPlayer.src = url;
-
-
-    document.getElementById(
-      "musicTitle"
-    ).textContent =
-      file.name;
-
-
-    document.getElementById(
-      "musicFileName"
-    ).textContent =
-      "マイミュージック";
-
-
-    audioPlayer.play();
-
-  }
-);
-
-
-audioPlayer.addEventListener(
-  "play",
-  () => {
-
-    setIsland("music");
-
-    islandLeft.textContent = "";
-
-    islandCenter.textContent = "";
-
-    // H案
-    // 右側に♪だけ
-    islandRight.textContent = "♪";
-
-  }
-);
-
-
-audioPlayer.addEventListener(
-  "pause",
-  () => {
-
-    if (islandMode === "music") {
-      resetIsland();
-    }
-
-  }
-);
-
-
-
-/* ==============================
+/* =========================
    設定
-================================ */
+========================= */
 
-const secondsToggle =
-  document.getElementById(
-    "secondsToggle"
-  );
+.settingsList {
+  width: min(650px, 80%);
 
-const reminderToggle =
-  document.getElementById(
-    "reminderToggle"
-  );
+  margin: 50px auto;
+}
 
+.settingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-showSeconds =
-  localStorage.getItem(
-    "lumaShowSeconds"
-  ) === "true";
+  margin-bottom: 10px;
 
+  padding: 18px 22px;
 
-secondsToggle.checked =
-  showSeconds;
+  border-radius: 22px;
 
-
-secondsToggle.addEventListener(
-  "change",
-  () => {
-
-    showSeconds =
-      secondsToggle.checked;
-
-
-    localStorage.setItem(
-      "lumaShowSeconds",
-      showSeconds
-    );
-
-
-    updateClock();
-
-  }
-);
-
-
-const savedReminderVisibility =
-  localStorage.getItem(
-    "lumaShowHomeReminders"
-  );
-
-
-if (savedReminderVisibility !== null) {
-
-  reminderToggle.checked =
-    savedReminderVisibility === "true";
-
+  background: rgba(255,255,255,.08);
 }
 
 
-function updateHomeReminderVisibility() {
+/* =========================
+   サイドメニュー
+========================= */
 
-  document.getElementById(
-    "homeReminders"
-  ).style.display =
-    reminderToggle.checked
-      ? "block"
-      : "none";
+#menuOverlay {
+  position: fixed;
 
+  inset: 0;
+
+  z-index: 800;
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  background: rgba(0,0,0,.18);
+
+  transition: .3s;
 }
 
+#menuOverlay.show {
+  opacity: 1;
 
-reminderToggle.addEventListener(
-  "change",
-  () => {
+  pointer-events: auto;
 
-    localStorage.setItem(
-      "lumaShowHomeReminders",
-      reminderToggle.checked
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+#sideMenu {
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  z-index: 900;
+
+  width: 320px;
+  max-width: 72vw;
+
+  height: 100%;
+
+  padding: 34px 20px;
+
+  transform: translateX(-105%);
+
+  border-right: 1px solid rgba(255,255,255,.22);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(60,60,60,.65),
+      rgba(8,8,8,.58)
     );
 
-    updateHomeReminderVisibility();
+  backdrop-filter: blur(38px);
+  -webkit-backdrop-filter: blur(38px);
 
-  }
-);
+  transition:
+    transform .4s cubic-bezier(.2,.9,.2,1);
+}
 
+#sideMenu.show {
+  transform: translateX(0);
+}
 
-updateHomeReminderVisibility();
+#sideMenu h2 {
+  margin: 0 0 22px 12px;
 
+  font-size: 28px;
+}
 
-/* 初期状態 */
+#sideMenu button {
+  width: 100%;
 
-openPage("home");
+  padding: 12px 15px;
+
+  border: 0;
+  border-radius: 16px;
+
+  text-align: left;
+
+  color: white;
+
+  background: transparent;
+
+  font-size: 17px;
+}
+
+#sideMenu button:active {
+  background: rgba(255,255,255,.14);
+}
+
+.divider {
+  height: 1px;
+
+  margin: 10px;
+
+  background: rgba(255,255,255,.15);
+}
