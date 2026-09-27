@@ -1,40 +1,16 @@
-/* ============================================================
-   Luma OS 1.0
-   style.css
-   ============================================================ */
-
 :root {
-  --text: #ffffff;
-  --text-soft: rgba(255, 255, 255, 0.68);
-  --text-faint: rgba(255, 255, 255, 0.46);
-
-  --glass-rgb: 255, 255, 255;
-  --clock-opacity: 0.70;
-  --clock-brightness: 1;
-
-  --accent: #72a6ff;
-  --success: #24d989;
-  --danger: #ff5d67;
-
-  --radius: 30px;
-  --radius-small: 20px;
+  --glass-opacity: .18;
+  --glass-blur: 24px;
+  --reflection: .65;
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
 
-  --squish-x: 1;
-  --squish-y: 1;
-  --squish-rotate: 0deg;
-  --touch-x: 50%;
-  --touch-y: 50%;
+  --text: rgba(255,255,255,.98);
+  --soft-text: rgba(255,255,255,.72);
 }
-
-
-/* ============================================================
-   基本
-   ============================================================ */
 
 * {
   box-sizing: border-box;
@@ -43,33 +19,24 @@
 
 html,
 body {
+  margin: 0;
   width: 100%;
   height: 100%;
-  margin: 0;
   overflow: hidden;
-  background: #080b15;
-}
-
-body {
-  color: var(--text);
   font-family:
     -apple-system,
     BlinkMacSystemFont,
     "SF Pro Display",
-    "SF Pro Text",
     "Helvetica Neue",
     Arial,
     sans-serif;
 
-  user-select: none;
-  -webkit-user-select: none;
-
-  overscroll-behavior: none;
+  color: var(--text);
+  background: #89aef4;
 }
 
 button,
-input,
-select {
+input {
   font: inherit;
 }
 
@@ -77,3295 +44,1242 @@ button {
   color: inherit;
 }
 
-button,
-label,
-.menu-item,
-.settings-tab {
-  touch-action: manipulation;
-}
-
-button {
-  border: 0;
-}
-
-.hidden {
-  display: none !important;
-}
-
-
-/* ============================================================
-   背景
-   ============================================================ */
-
 .wallpaper {
   position: fixed;
   inset: 0;
 
-  z-index: -4;
-
   background:
     radial-gradient(
-      circle at 75% 22%,
-      rgba(255, 147, 101, 0.74),
-      transparent 28%
+      circle at 75% 45%,
+      rgba(255,235,188,.95),
+      transparent 24%
     ),
     radial-gradient(
-      circle at 35% 32%,
-      rgba(115, 95, 255, 0.40),
-      transparent 34%
+      circle at 20% 15%,
+      rgba(137,185,255,.95),
+      transparent 35%
     ),
     linear-gradient(
-      155deg,
-      #17254e 0%,
-      #704b78 39%,
-      #d56e58 66%,
-      #171c32 100%
+      145deg,
+      #77a6f7 0%,
+      #a9c7ff 28%,
+      #e3b9e7 58%,
+      #ffbf9e 78%,
+      #ffd5aa 100%
     );
 
-  background-position: center;
   background-size: cover;
-
-  filter: brightness(1);
-
+  background-position: center;
   transform: scale(1.02);
-
   transition:
-    filter 0.35s ease,
-    background-image 0.5s ease;
+    filter .6s ease,
+    transform .6s ease,
+    background 1.5s ease;
 }
 
 .wallpaper::after {
   content: "";
-
   position: absolute;
   inset: 0;
 
   background:
     linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.08),
-      rgba(0, 0, 0, 0.18)
+      to top,
+      rgba(42,71,143,.12),
+      transparent 45%
     );
 }
 
-.wallpaper-shade {
+.scene-overlay {
   position: fixed;
   inset: 0;
-
-  z-index: -3;
-
   pointer-events: none;
-
-  background:
-    radial-gradient(
-      ellipse at center,
-      transparent 20%,
-      rgba(4, 7, 18, 0.16) 68%,
-      rgba(4, 7, 18, 0.42) 100%
-    );
+  opacity: .15;
+  transition: 2s ease;
 }
 
-
-/* ============================================================
-   アプリ
-   ============================================================ */
-
-.app {
-  position: relative;
-
+#trailCanvas {
+  position: fixed;
+  inset: 0;
   width: 100%;
   height: 100%;
-
-  overflow: hidden;
-
-  padding:
-    calc(18px + var(--safe-top))
-    calc(22px + var(--safe-right))
-    calc(18px + var(--safe-bottom))
-    calc(22px + var(--safe-left));
+  pointer-events: none;
+  z-index: 20;
 }
-
-
-/* ============================================================
-   共通ガラス
-   ============================================================ */
 
 .glass {
   position: relative;
 
   background:
     linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.17),
-      rgba(255, 255, 255, 0.065)
+      135deg,
+      rgba(255,255,255,calc(var(--glass-opacity) + .10)),
+      rgba(255,255,255,var(--glass-opacity))
     );
 
-  border: 1px solid rgba(255, 255, 255, 0.34);
+  border: 1px solid rgba(255,255,255,.48);
 
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    0 18px 45px rgba(0, 0, 0, 0.24);
-
-  -webkit-backdrop-filter:
-    blur(24px)
-    saturate(165%);
+    inset 0 1px 1px rgba(255,255,255,.7),
+    inset 0 -1px 1px rgba(255,255,255,.12),
+    0 12px 35px rgba(36,61,120,.15);
 
   backdrop-filter:
-    blur(24px)
-    saturate(165%);
+    blur(var(--glass-blur))
+    saturate(145%);
+
+  -webkit-backdrop-filter:
+    blur(var(--glass-blur))
+    saturate(145%);
 }
 
-
-/* ============================================================
-   厚いLiquid Glass
-   ============================================================ */
-
-.liquid-glass {
-  position: relative;
-  isolation: isolate;
-
-  overflow: hidden;
-
-  border:
-    1px solid
-    rgba(
-      var(--glass-rgb),
-      calc(0.28 + var(--clock-opacity) * 0.25)
-    );
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
 
   background:
     radial-gradient(
-      circle at var(--touch-x) var(--touch-y),
-      rgba(var(--glass-rgb), 0.36),
-      transparent 20%
-    ),
-    linear-gradient(
-      145deg,
-      rgba(
-        var(--glass-rgb),
-        calc(var(--clock-opacity) * 0.32)
-      ),
-      rgba(
-        var(--glass-rgb),
-        calc(var(--clock-opacity) * 0.10)
-      ) 42%,
-      rgba(
-        var(--glass-rgb),
-        calc(var(--clock-opacity) * 0.16)
-      )
+      circle at var(--light-x, 30%) var(--light-y, 20%),
+      rgba(255,255,255,var(--reflection)),
+      transparent 30%
     );
 
-  box-shadow:
-    inset 0 2px 2px rgba(255, 255, 255, 0.72),
-    inset 2px 0 4px rgba(255, 255, 255, 0.18),
-    inset -2px -3px 6px rgba(0, 0, 0, 0.14),
-    0 1px 1px rgba(255, 255, 255, 0.25),
-    0 15px 45px rgba(0, 0, 0, 0.24),
-    0 0 26px rgba(var(--glass-rgb), 0.10);
+  opacity: .35;
+  mix-blend-mode: screen;
+}
 
-  -webkit-backdrop-filter:
-    blur(30px)
-    saturate(190%)
-    brightness(var(--clock-brightness));
-
-  backdrop-filter:
-    blur(30px)
-    saturate(190%)
-    brightness(var(--clock-brightness));
-
+.living-glass {
+  overflow: hidden;
   transform:
     perspective(700px)
-    scaleX(var(--squish-x))
-    scaleY(var(--squish-y))
-    rotate(var(--squish-rotate));
-
-  transform-origin:
-    var(--touch-x)
-    var(--touch-y);
-
-  will-change: transform, filter;
+    rotateX(var(--tilt-x, 0deg))
+    rotateY(var(--tilt-y, 0deg))
+    scale(var(--press-scale, 1));
 
   transition:
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    transform .45s cubic-bezier(.2,1.6,.3,1),
+    box-shadow .3s ease;
 }
 
-
-/* 光沢膜 */
-
-.liquid-glass::before {
-  content: "";
-
-  position: absolute;
-  inset: 1px;
-
-  z-index: -1;
-
-  border-radius: inherit;
-
-  pointer-events: none;
-
-  background:
-    linear-gradient(
-      120deg,
-      rgba(255, 255, 255, 0.38) 0%,
-      rgba(255, 255, 255, 0.08) 20%,
-      transparent 43%,
-      rgba(255, 255, 255, 0.08) 72%,
-      rgba(255, 255, 255, 0.22) 100%
-    );
-
-  opacity: 0.8;
-}
-
-
-/* 屈折感 */
-
-.liquid-glass::after {
-  content: "";
-
-  position: absolute;
-
-  width: 44%;
-  height: 180%;
-
-  left: -18%;
-  top: -50%;
-
-  z-index: -1;
-
-  pointer-events: none;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.22),
-      transparent
-    );
-
-  transform: rotate(20deg);
-
-  filter: blur(12px);
-
-  opacity: 0.62;
-}
-
-
-/* ============================================================
-   ボヨン
-   ============================================================ */
-
-.squishy {
-  position: relative;
-
-  cursor: pointer;
-
-  transform:
-    scaleX(var(--squish-x))
-    scaleY(var(--squish-y))
-    rotate(var(--squish-rotate));
-
-  transform-origin:
-    var(--touch-x)
-    var(--touch-y);
-
-  will-change: transform;
-
-  transition:
-    transform 420ms
-    cubic-bezier(0.18, 1.45, 0.35, 1);
-}
-
-.squishy.is-pressed {
-  transition:
-    transform 85ms ease-out;
-}
-
-.squishy.is-rebounding {
-  animation:
-    lumaBounce 520ms
-    cubic-bezier(0.16, 1.55, 0.38, 1);
-}
-
-.squishy-soft.is-rebounding {
-  animation:
-    lumaSoftBounce 440ms
-    cubic-bezier(0.2, 1.25, 0.35, 1);
-}
-
-@keyframes lumaBounce {
-  0% {
-    transform:
-      scaleX(var(--release-x, 0.95))
-      scaleY(var(--release-y, 0.93));
-  }
-
-  38% {
-    transform:
-      scaleX(1.045)
-      scaleY(1.035);
-  }
-
-  62% {
-    transform:
-      scaleX(0.986)
-      scaleY(0.992);
-  }
-
-  82% {
-    transform:
-      scaleX(1.012)
-      scaleY(1.008);
-  }
-
-  100% {
-    transform:
-      scaleX(1)
-      scaleY(1);
-  }
-}
-
-@keyframes lumaSoftBounce {
-  0% {
-    transform: scale(0.975);
-  }
-
-  45% {
-    transform: scale(1.015);
-  }
-
-  72% {
-    transform: scale(0.995);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-
-/* ============================================================
-   ガラスボタン
-   ============================================================ */
-
-.glass-button {
-  display: inline-flex;
-
-  align-items: center;
-  justify-content: center;
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.28);
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.20),
-      rgba(255, 255, 255, 0.08)
-    );
+.living-glass.pressed {
+  --press-scale: .975;
 
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.42),
-    0 8px 22px rgba(0, 0, 0, 0.20);
-
-  -webkit-backdrop-filter:
-    blur(18px)
-    saturate(170%);
-
-  backdrop-filter:
-    blur(18px)
-    saturate(170%);
-
-  cursor: pointer;
+    inset 0 5px 20px rgba(255,255,255,.18),
+    inset 0 -6px 18px rgba(50,90,180,.12),
+    0 7px 18px rgba(30,50,100,.15);
 }
 
-.circle-button {
-  width: 48px;
-  height: 48px;
-
-  flex: 0 0 48px;
-
-  padding: 0;
+.living-glass .ripple {
+  position: absolute;
+  width: 12px;
+  height: 12px;
 
   border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.8);
 
-  font-size: 25px;
-  line-height: 1;
+  transform: translate(-50%, -50%) scale(0);
+  animation: ripple .75s ease-out forwards;
+
+  pointer-events: none;
 }
 
+@keyframes ripple {
+  to {
+    transform:
+      translate(-50%, -50%)
+      scale(16);
 
-/* ============================================================
-   メニューボタン
-   ============================================================ */
-
-#menuButton {
-  position: absolute;
-
-  top: calc(20px + var(--safe-top));
-  left: calc(22px + var(--safe-left));
-
-  z-index: 40;
-
-  width: 52px;
-  height: 52px;
-
-  border-radius: 50%;
-
-  display: flex;
-  flex-direction: column;
-
-  gap: 5px;
+    opacity: 0;
+  }
 }
 
-#menuButton span {
-  display: block;
+#lumaOS {
+  position: fixed;
+  inset: 0;
 
-  width: 20px;
-  height: 2px;
+  padding:
+    calc(10px + var(--safe-top))
+    calc(12px + var(--safe-right))
+    calc(10px + var(--safe-bottom))
+    calc(12px + var(--safe-left));
 
-  border-radius: 20px;
-
-  background: #fff;
-
-  box-shadow:
-    0 0 8px rgba(255, 255, 255, 0.35);
+  z-index: 5;
 }
 
-
-/* ============================================================
-   Dynamic Island
-   ============================================================ */
-
-.dynamic-island {
-  position: absolute;
-
-  top: calc(18px + var(--safe-top));
-  left: 50%;
-
-  z-index: 42;
-
-  width: 270px;
-  min-height: 54px;
-
-  padding: 7px 15px 7px 8px;
-
-  border-radius: 32px;
+.topbar {
+  height: clamp(38px, 8vh, 58px);
 
   display: flex;
   align-items: center;
+  justify-content: space-between;
 
-  gap: 10px;
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(3, 4, 10, 0.98),
-      rgba(4, 7, 14, 0.94)
-    );
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.10);
-
-  box-shadow:
-    0 13px 32px rgba(0, 0, 0, 0.36),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-
-  transform:
-    translateX(-50%)
-    scaleX(var(--squish-x))
-    scaleY(var(--squish-y));
-
-  color: #fff;
-
-  text-align: left;
+  gap: 12px;
 }
 
-.dynamic-island.is-pressed {
-  transform:
-    translateX(-50%)
-    scaleX(0.96)
-    scaleY(0.90);
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+
+  text-shadow: 0 2px 15px rgba(70,90,150,.25);
 }
 
-.dynamic-island.is-rebounding {
-  animation: islandBounce 500ms cubic-bezier(.2,1.55,.35,1);
+.brand strong {
+  font-size: clamp(18px, 3vw, 30px);
+  font-weight: 600;
 }
 
-@keyframes islandBounce {
-  0% {
-    transform: translateX(-50%) scale(0.94);
-  }
-
-  45% {
-    transform: translateX(-50%) scale(1.035);
-  }
-
-  72% {
-    transform: translateX(-50%) scale(0.99);
-  }
-
-  100% {
-    transform: translateX(-50%) scale(1);
-  }
+.brand span {
+  font-size: clamp(10px, 1.3vw, 14px);
+  opacity: .72;
 }
 
-.island-artwork {
-  width: 40px;
-  height: 40px;
+.top-actions {
+  display: flex;
+  gap: 8px;
+}
 
-  flex: 0 0 40px;
+.mini-button,
+.back-button,
+.add-button {
+  width: clamp(36px, 5vw, 48px);
+  height: clamp(36px, 5vw, 48px);
 
-  border-radius: 14px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
 
   display: grid;
   place-items: center;
-
-  background:
-    linear-gradient(
-      145deg,
-      #745cff,
-      #ff718d,
-      #ffb66b
-    );
-
-  overflow: hidden;
-
-  font-size: 20px;
 }
-
-.island-info {
-  min-width: 0;
-
-  flex: 1;
-}
-
-.island-title {
-  overflow: hidden;
-
-  font-size: 13px;
-  font-weight: 700;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.island-subtitle {
-  margin-top: 2px;
-
-  overflow: hidden;
-
-  color: rgba(255, 255, 255, 0.60);
-
-  font-size: 10px;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.island-right {
-  font-size: 18px;
-  font-variant-numeric: tabular-nums;
-}
-
-
-/* ============================================================
-   ホーム天気
-   ============================================================ */
-
-.home-weather {
-  position: absolute;
-
-  top: calc(20px + var(--safe-top));
-  right: calc(22px + var(--safe-right));
-
-  z-index: 38;
-
-  min-width: 150px;
-  height: 54px;
-
-  padding: 7px 15px;
-
-  border-radius: 27px;
-
-  display: flex;
-  align-items: center;
-
-  gap: 9px;
-
-  color: #fff;
-
-  text-align: left;
-}
-
-.home-weather-icon {
-  font-size: 29px;
-}
-
-.home-weather-main {
-  font-size: 19px;
-  font-weight: 650;
-
-  line-height: 1;
-}
-
-.home-weather-city {
-  max-width: 95px;
-
-  margin-top: 4px;
-
-  overflow: hidden;
-
-  color: var(--text-soft);
-
-  font-size: 10px;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-
-/* ============================================================
-   ページ
-   ============================================================ */
 
 .page {
-  position: absolute;
-  inset: 0;
-
-  z-index: 2;
-
   display: none;
+  height: calc(100% - clamp(38px, 8vh, 58px));
+  overflow: auto;
 }
 
 .page.active {
   display: block;
 }
 
-
-/* ============================================================
-   ホーム
-   ============================================================ */
+#homePage {
+  overflow: hidden;
+}
 
 .home-layout {
-  position: absolute;
+  height: calc(100% - clamp(75px, 17vh, 110px));
 
-  inset:
-    calc(88px + var(--safe-top))
-    calc(24px + var(--safe-right))
-    calc(20px + var(--safe-bottom))
-    calc(24px + var(--safe-left));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(145px, 27%);
+  gap: clamp(8px, 1.5vw, 18px);
+
+  padding-top: 5px;
+}
+
+.hero-clock {
+  min-width: 0;
+
+  border-radius: clamp(28px, 5vw, 55px);
 
   display: flex;
   flex-direction: column;
-
-  align-items: center;
   justify-content: center;
-}
-
-.home-date {
-  margin-bottom: 9px;
-
-  color: rgba(255, 255, 255, 0.88);
-
-  font-size: clamp(16px, 2.3vw, 25px);
-  font-weight: 400;
-
-  text-shadow:
-    0 3px 14px rgba(0, 0, 0, 0.28);
-}
-
-
-/* ============================================================
-   メイン時計ガラス
-   ============================================================ */
-
-.clock-glass {
-  width: min(58vw, 660px);
-  min-width: 410px;
-
-  height: clamp(145px, 27vh, 245px);
-
-  border-radius: 999px;
-
-  display: flex;
   align-items: center;
-  justify-content: center;
 
-  padding:
-    12px
-    clamp(35px, 6vw, 78px);
-
-  color: #fff;
-
-  cursor: pointer;
-
-  text-shadow:
-    0 2px 1px rgba(255, 255, 255, 0.20),
-    0 4px 16px rgba(0, 0, 0, 0.18),
-    0 0 28px rgba(255, 255, 255, 0.15);
+  isolation: isolate;
 }
 
-
-/* 時計の上側に強い反射 */
-
-.clock-glass-shine {
+.clock-reflection {
   position: absolute;
-
-  top: 5px;
-  left: 10%;
-
-  width: 80%;
-  height: 42%;
-
-  border-radius: 999px;
-
-  pointer-events: none;
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.36),
-      rgba(255, 255, 255, 0.07),
-      transparent
-    );
-
-  filter: blur(1px);
-}
-
-
-/* 指周辺の屈折 */
-
-.clock-glass-refraction {
-  position: absolute;
-
-  left: var(--touch-x);
-  top: var(--touch-y);
-
-  width: 100px;
-  height: 100px;
-
-  border-radius: 50%;
-
-  pointer-events: none;
-
-  opacity: 0;
-
-  transform:
-    translate(-50%, -50%)
-    scale(0.6);
+  inset: -20%;
 
   background:
     radial-gradient(
-      circle,
-      rgba(255, 255, 255, 0.38),
-      rgba(var(--glass-rgb), 0.16) 35%,
-      transparent 68%
+      circle at var(--light-x, 40%) var(--light-y, 20%),
+      rgba(255,255,255,.55),
+      transparent 25%
     );
 
-  box-shadow:
-    inset 0 0 18px rgba(255, 255, 255, 0.35),
-    0 0 22px rgba(var(--glass-rgb), 0.15);
-
-  transition:
-    opacity 0.15s ease,
-    transform 0.2s ease;
-}
-
-.is-pressed .clock-glass-refraction {
-  opacity: 1;
-
-  transform:
-    translate(-50%, -50%)
-    scale(1.08);
-}
-
-.clock-text {
-  position: relative;
-
-  z-index: 2;
-
-  font-size: clamp(86px, 14vw, 174px);
-  font-weight: 200;
-  line-height: 0.9;
-
-  letter-spacing: -0.075em;
-
-  font-variant-numeric: tabular-nums;
-}
-
-.clock-seconds {
-  position: relative;
-
-  z-index: 2;
-
-  align-self: flex-end;
-
-  margin:
-    0
-    0
-    31px
-    16px;
-
-  color: rgba(255, 255, 255, 0.80);
-
-  font-size: clamp(18px, 2.8vw, 32px);
-
-  font-variant-numeric: tabular-nums;
-}
-
-
-/* ============================================================
-   ホーム予定
-   ============================================================ */
-
-.home-reminder-card {
-  width: min(48vw, 520px);
-
-  max-height: 180px;
-
-  margin-top: 14px;
-
-  padding: 13px 18px;
-
-  border-radius: 26px;
-
-  overflow: hidden;
-}
-
-.card-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.card-title-row h2 {
-  margin: 0;
-
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.mini-glass-button {
-  width: 30px;
-  height: 30px;
-
-  border-radius: 50%;
-
-  display: grid;
-  place-items: center;
-
-  color: #fff;
-
-  border: 1px solid rgba(255, 255, 255, 0.25);
-
-  background: rgba(255, 255, 255, 0.13);
-
-  cursor: pointer;
-}
-
-.home-reminder-list {
-  max-height: 122px;
-
-  margin-top: 5px;
-
-  overflow-y: auto;
-
-  scrollbar-width: none;
-}
-
-.home-reminder-list::-webkit-scrollbar {
-  display: none;
-}
-
-.home-reminder-item {
-  display: grid;
-
-  grid-template-columns:
-    22px
-    1fr
-    auto;
-
-  align-items: center;
-
-  gap: 10px;
-
-  min-height: 34px;
-
-  border-bottom:
-    1px solid
-    rgba(255, 255, 255, 0.09);
-
-  font-size: 13px;
-}
-
-.home-reminder-item:last-child {
-  border-bottom: 0;
-}
-
-.home-reminder-check {
-  width: 19px;
-  height: 19px;
-
-  border-radius: 50%;
-
-  border:
-    1.5px solid
-    rgba(255, 255, 255, 0.72);
-
-  background: transparent;
-}
-
-.home-reminder-time {
-  color: var(--text-soft);
-
-  font-variant-numeric: tabular-nums;
-}
-
-.home-empty {
-  padding: 18px 5px;
-
-  color: var(--text-soft);
-
-  text-align: center;
-  font-size: 12px;
-}
-
-
-/* ============================================================
-   ツール画面
-   ============================================================ */
-
-.tool-page {
-  padding:
-    calc(20px + var(--safe-top))
-    calc(22px + var(--safe-right))
-    calc(20px + var(--safe-bottom))
-    calc(22px + var(--safe-left));
-}
-
-.tool-window {
-  width: 100%;
-  height: 100%;
-
-  border-radius: 34px;
-
-  overflow: hidden;
-
-  padding: 22px 25px;
-}
-
-.tool-header {
-  height: 58px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 20px;
-}
-
-.tool-header h1 {
-  margin: 0;
-
-  font-size: 25px;
-  font-weight: 680;
-}
-
-.eyebrow {
-  margin-bottom: 2px;
-
-  color: var(--text-soft);
-
-  font-size: 10px;
-
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.header-actions {
-  display: flex;
-
-  gap: 9px;
-}
-
-
-/* ============================================================
-   時計ページ
-   ============================================================ */
-
-.clock-page-content {
-  height: calc(100% - 58px);
-
-  display: flex;
-  flex-direction: column;
-
-  align-items: center;
-  justify-content: center;
-}
-
-.large-clock-glass {
-  width: min(72vw, 800px);
-  height: min(43vh, 310px);
-
-  border-radius: 999px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 20px 55px;
-
-  color: #fff;
-}
-
-#largeClockText {
-  font-size: clamp(100px, 17vw, 205px);
-  font-weight: 200;
-
-  line-height: 1;
-
-  letter-spacing: -0.075em;
-
-  font-variant-numeric: tabular-nums;
-}
-
-#largeClockSeconds {
-  align-self: flex-end;
-
-  margin-bottom: 49px;
-  margin-left: 20px;
-
-  color: rgba(255, 255, 255, 0.76);
-
-  font-size: clamp(22px, 3vw, 38px);
-
-  font-variant-numeric: tabular-nums;
-}
-
-.large-clock-date {
-  margin-top: 20px;
-
-  color: rgba(255, 255, 255, 0.84);
-
-  font-size: 20px;
-}
-
-
-/* ============================================================
-   共通リスト
-   ============================================================ */
-
-.tool-list {
-  height: calc(100% - 78px);
-
-  margin-top: 16px;
-
-  overflow-y: auto;
-
-  padding-right: 5px;
-
-  scrollbar-width: thin;
-}
-
-.list-card {
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 15px;
-
-  min-height: 74px;
-
-  margin-bottom: 9px;
-
-  padding: 11px 15px;
-
-  border-radius: 22px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.13),
-      rgba(255, 255, 255, 0.055)
-    );
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.17);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.20);
-
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
-}
-
-.list-main {
-  min-width: 0;
-
-  flex: 1;
-}
-
-.list-title {
-  overflow: hidden;
-
-  font-size: 18px;
-  font-weight: 650;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.list-subtitle {
-  margin-top: 4px;
-
-  color: var(--text-soft);
-
-  font-size: 11px;
-}
-
-.list-actions {
-  display: flex;
-  align-items: center;
-
-  gap: 10px;
-}
-
-.icon-button {
-  width: 37px;
-  height: 37px;
-
-  border-radius: 50%;
-
-  display: grid;
-  place-items: center;
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.18);
-
-  background:
-    rgba(255, 255, 255, 0.10);
-
-  color: #fff;
-
-  cursor: pointer;
-}
-
-
-/* ============================================================
-   空表示
-   ============================================================ */
-
-.empty-state {
-  height: calc(100% - 90px);
-
-  display: none;
-  flex-direction: column;
-
-  align-items: center;
-  justify-content: center;
-
-  color: var(--text-soft);
-
-  text-align: center;
-}
-
-.empty-state.show {
-  display: flex;
-}
-
-.empty-icon {
-  margin-bottom: 10px;
-
-  font-size: 48px;
-}
-
-.empty-state p {
-  margin: 0 0 4px;
-
-  color: #fff;
-
-  font-size: 18px;
-  font-weight: 650;
-}
-
-.empty-state span {
-  font-size: 12px;
-}
-
-.web-limit-note {
-  position: absolute;
-
-  right: 42px;
-  bottom: 28px;
-  left: 42px;
-
-  color: rgba(255, 255, 255, 0.46);
-
-  font-size: 10px;
-  text-align: center;
-
+  filter: blur(10px);
+  opacity: .7;
   pointer-events: none;
 }
 
-
-/* ============================================================
-   スイッチ
-   ============================================================ */
-
-.switch {
+.clock-time {
   position: relative;
+  z-index: 2;
 
-  width: 48px;
-  height: 28px;
+  font-size: clamp(72px, 16vw, 190px);
+  line-height: .88;
+  font-weight: 200;
+  letter-spacing: -.065em;
 
-  flex: 0 0 48px;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.8),
+    0 7px 35px rgba(87,100,160,.20);
 }
 
-.switch input {
-  width: 0;
-  height: 0;
+.clock-seconds {
+  display: none;
 
-  opacity: 0;
-}
-
-.switch-slider {
   position: absolute;
-  inset: 0;
+  right: 8%;
+  top: 24%;
 
-  border-radius: 99px;
+  font-size: clamp(14px, 2.5vw, 26px);
+  opacity: .75;
+}
+
+.clock-date {
+  margin-top: clamp(8px, 2vh, 15px);
+
+  font-size: clamp(16px, 3vw, 31px);
+  font-weight: 400;
+}
+
+.peek-hint {
+  position: absolute;
+  bottom: 14px;
+
+  font-size: 10px;
+  opacity: .45;
+}
+
+.sun-track {
+  width: min(55%, 350px);
+  height: 20px;
+
+  position: relative;
+  margin-top: 10px;
+}
+
+.sun-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 10px;
+
+  height: 1px;
 
   background:
-    rgba(255, 255, 255, 0.19);
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.18);
-
-  transition: 0.25s ease;
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,.7),
+      transparent
+    );
 }
 
-.switch-slider::after {
-  content: "";
+.sun-dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
 
+  transform: translateX(-50%);
+
+  text-shadow:
+    0 0 15px #fff7c0,
+    0 0 25px #ffd56d;
+}
+
+.home-side {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: clamp(6px, 1.2vh, 12px);
+}
+
+.info-card {
+  flex: 1;
+
+  min-height: 0;
+  width: 100%;
+
+  border: 0;
+  border-radius: clamp(18px, 3vw, 30px);
+
+  padding: clamp(9px, 2vw, 18px);
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  text-align: left;
+}
+
+.weather-icon,
+.card-symbol {
+  font-size: clamp(23px, 4vw, 42px);
+}
+
+.weather-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.weather-main strong {
+  font-size: clamp(24px, 5vw, 48px);
+  line-height: 1;
+}
+
+.weather-main span,
+.weather-city {
+  font-size: clamp(9px, 1.4vw, 13px);
+  opacity: .72;
+}
+
+.weather-city {
+  margin-left: auto;
+}
+
+.card-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card-copy small {
+  opacity: .65;
+}
+
+.card-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dock {
   position: absolute;
 
-  width: 22px;
-  height: 22px;
+  left: max(12px, var(--safe-left));
+  right: max(12px, var(--safe-right));
+  bottom: max(8px, var(--safe-bottom));
 
-  left: 2px;
-  top: 2px;
+  min-height: clamp(62px, 14vh, 92px);
 
-  border-radius: 50%;
-
-  background: #fff;
-
-  box-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.22);
-
-  transition:
-    transform 0.25s
-    cubic-bezier(0.2, 1.3, 0.4, 1);
-}
-
-.switch input:checked + .switch-slider {
-  background: var(--success);
-}
-
-.switch input:checked + .switch-slider::after {
-  transform: translateX(20px);
-}
-
-
-/* ============================================================
-   タイマー
-   ============================================================ */
-
-.timer-layout {
-  height: calc(100% - 58px);
-
-  display: flex;
-  flex-direction: column;
-
-  align-items: center;
-  justify-content: center;
-
-  gap: 15px;
-}
-
-.timer-display {
-  width: min(56vw, 550px);
-  height: 150px;
-
-  border-radius: 999px;
+  border-radius: 35px;
 
   display: grid;
-  place-items: center;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
 
-  color: #fff;
+  align-items: center;
 
-  font-size: clamp(55px, 8.8vw, 105px);
-  font-weight: 260;
+  padding: 6px clamp(5px, 1vw, 14px);
 
-  font-variant-numeric: tabular-nums;
+  z-index: 10;
 }
 
-.timer-setter {
-  display: flex;
+.dock-item {
+  min-width: 0;
 
-  align-items: flex-end;
-  justify-content: center;
+  border: 0;
+  background: transparent;
 
-  gap: 9px;
-
-  padding: 9px 17px;
-
-  border-radius: 21px;
-}
-
-.timer-setter label {
   display: flex;
   flex-direction: column;
-
   align-items: center;
 
   gap: 3px;
 
-  color: var(--text-soft);
-
-  font-size: 9px;
-}
-
-.timer-setter input {
-  width: 67px;
-  height: 40px;
-
-  border: 0;
-  outline: 0;
-
-  border-radius: 14px;
-
-  background:
-    rgba(255, 255, 255, 0.11);
-
-  color: #fff;
-
-  text-align: center;
-
-  font-size: 20px;
-
-  font-variant-numeric: tabular-nums;
-}
-
-.time-colon {
-  margin-bottom: 10px;
-
-  font-size: 22px;
-}
-
-.preset-row,
-.primary-actions {
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  gap: 9px;
-
-  flex-wrap: wrap;
-}
-
-.preset-button {
-  min-width: 62px;
-
-  padding: 9px 15px;
-
-  border-radius: 18px;
-}
-
-.action-button {
-  min-height: 42px;
-
-  padding: 10px 20px;
-
-  border-radius: 22px;
-
   cursor: pointer;
 }
 
-.action-button.primary,
-.modal-primary,
-.search-button {
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.26);
+.dock-icon {
+  width: clamp(34px, 5vw, 52px);
+  aspect-ratio: 1;
+
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  font-size: clamp(18px, 2.5vw, 26px);
 
   background:
     linear-gradient(
       145deg,
-      #2be292,
-      #09b96c
+      rgba(255,255,255,.38),
+      rgba(255,255,255,.13)
     );
 
-  color: #fff;
+  border: 1px solid rgba(255,255,255,.55);
 
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.36),
-    0 10px 24px rgba(0, 185, 110, 0.24);
+    inset 0 1px 2px rgba(255,255,255,.8),
+    0 4px 15px rgba(50,70,130,.14);
+
+  transition:
+    transform .3s cubic-bezier(.2,1.6,.3,1);
 }
 
+.dock-item:active .dock-icon {
+  transform: scale(.84);
+}
 
-/* ============================================================
-   ストップウォッチ
-   ============================================================ */
+.dock-item > span:last-child {
+  font-size: clamp(7px, 1.1vw, 11px);
+  white-space: nowrap;
+}
 
-.stopwatch-layout {
-  height: calc(100% - 58px);
+.page-header {
+  height: 60px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.page-header h1 {
+  flex: 1;
+  margin: 0;
+
+  font-size: clamp(22px, 4vw, 36px);
+  font-weight: 500;
+}
+
+.center-page {
+  min-height: calc(100% - 70px);
 
   display: flex;
   flex-direction: column;
-
   align-items: center;
   justify-content: center;
 
   gap: 18px;
 }
 
+.giant-clock,
+.timer-display,
 .stopwatch-display {
-  width: min(56vw, 570px);
-  height: 170px;
+  width: min(80vw, 760px);
 
-  border-radius: 999px;
-
-  display: grid;
-  place-items: center;
-
-  color: #fff;
-
-  font-size: clamp(62px, 10vw, 122px);
-  font-weight: 240;
-
-  font-variant-numeric: tabular-nums;
-}
-
-.lap-list {
-  width: min(58vw, 600px);
-  max-height: 140px;
-
-  overflow-y: auto;
-}
-
-.lap-row {
-  display: flex;
-  justify-content: space-between;
-
-  padding: 7px 13px;
-
-  border-bottom:
-    1px solid
-    rgba(255, 255, 255, 0.10);
-
-  color: var(--text-soft);
-
-  font-size: 12px;
-
-  font-variant-numeric: tabular-nums;
-}
-
-
-/* ============================================================
-   世界時計
-   ============================================================ */
-
-.world-clock-list {
-  height: calc(100% - 73px);
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 12px;
-
-  padding-top: 15px;
-
-  overflow-y: auto;
-}
-
-.glass-subpanel {
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.17);
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.13),
-      rgba(255, 255, 255, 0.055)
-    );
-
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.20);
-
-  -webkit-backdrop-filter:
-    blur(18px)
-    saturate(150%);
-
-  backdrop-filter:
-    blur(18px)
-    saturate(150%);
-}
-
-.world-clock-item {
-  min-height: 110px;
-
-  padding: 17px 20px;
-
-  border-radius: 25px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 15px;
-}
-
-.world-clock-item strong {
-  display: block;
-
-  font-size: 18px;
-}
-
-.world-clock-item span {
-  display: block;
-
-  margin-top: 5px;
-
-  color: var(--text-soft);
-
-  font-size: 11px;
-}
-
-.world-clock-item time {
-  font-size: clamp(27px, 4vw, 48px);
-  font-weight: 300;
-
-  font-variant-numeric: tabular-nums;
-}
-
-
-/* ============================================================
-   天気
-   ============================================================ */
-
-.weather-layout {
-  height: calc(100% - 58px);
-
-  display: flex;
-  flex-direction: column;
-
-  align-items: center;
-  justify-content: center;
-
-  gap: 15px;
-}
-
-.weather-main {
-  width: min(55vw, 580px);
-
-  padding: 18px 25px;
-
-  border-radius: 30px;
-
-  display: grid;
-
-  grid-template-columns:
-    auto auto;
-
-  grid-template-areas:
-    "icon temp"
-    "city city"
-    "desc desc";
-
-  align-items: center;
-  justify-content: center;
-
-  column-gap: 18px;
+  border-radius: 45px;
+  padding: clamp(25px, 6vh, 60px);
 
   text-align: center;
 }
 
-.weather-icon {
-  grid-area: icon;
-
-  font-size: 78px;
-}
-
-.weather-temperature {
-  grid-area: temp;
-
-  font-size: clamp(68px, 10vw, 118px);
-  font-weight: 250;
-}
-
-.weather-city {
-  grid-area: city;
-
-  margin-top: 4px;
-
-  font-size: 20px;
-  font-weight: 650;
-}
-
-.weather-description {
-  grid-area: desc;
-
-  margin-top: 7px;
-
-  color: var(--text-soft);
-
-  font-size: 13px;
-}
-
-.weather-stats {
-  width: min(66vw, 700px);
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 9px;
-}
-
-.weather-stat {
-  padding: 12px;
-
-  border-radius: 20px;
-
-  text-align: center;
-}
-
-.weather-stat span {
-  display: block;
-
-  margin-bottom: 5px;
-
-  color: var(--text-soft);
-
-  font-size: 10px;
-}
-
-.weather-stat strong {
-  font-size: 18px;
-}
-
-.weather-updated {
-  color: var(--text-soft);
-
-  font-size: 10px;
-}
-
-
-/* ============================================================
-   ミュージック
-   ============================================================ */
-
-.music-layout {
-  height: calc(100% - 58px);
-
-  display: flex;
-  flex-direction: column;
-
-  align-items: center;
-
-  overflow-y: auto;
-
-  padding-top: 10px;
-}
-
-.album-artwork {
-  width: 120px;
-  height: 120px;
-
-  flex: 0 0 120px;
-
-  border-radius: 30px;
-
-  display: grid;
-  place-items: center;
-
-  background:
-    radial-gradient(
-      circle at 70% 25%,
-      rgba(255, 193, 137, 0.65),
-      transparent 30%
-    ),
-    linear-gradient(
-      145deg,
-      rgba(93, 86, 255, 0.55),
-      rgba(255, 88, 145, 0.36),
-      rgba(255, 174, 91, 0.35)
-    );
-}
-
-.album-note {
-  font-size: 48px;
-
-  text-shadow:
-    0 0 25px rgba(255, 255, 255, 0.50);
-}
-
-.music-title {
-  max-width: 70vw;
-
-  margin-top: 12px;
-
-  overflow: hidden;
-
-  font-size: 19px;
-  font-weight: 700;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.music-artist {
-  margin-top: 4px;
-
-  color: var(--text-soft);
-
-  font-size: 11px;
-}
-
-.music-progress-wrap {
-  width: min(60vw, 620px);
-
-  margin-top: 13px;
-}
-
-.music-times {
-  display: flex;
-  justify-content: space-between;
-
-  margin-top: 3px;
-
-  color: var(--text-soft);
-
-  font-size: 9px;
-}
-
-.music-controls {
-  display: flex;
-  align-items: center;
-
-  gap: 20px;
-
-  margin-top: 8px;
-}
-
-.music-control {
-  width: 45px;
-  height: 45px;
-
-  border-radius: 50%;
-}
-
-.music-play {
-  width: 66px;
-  height: 66px;
-
-  border-radius: 50%;
-
-  display: grid;
-  place-items: center;
-
-  color: #fff;
-
-  font-size: 26px;
-}
-
-.volume-row {
-  width: min(55vw, 570px);
-
-  display: flex;
-  align-items: center;
-
-  gap: 9px;
-
-  margin-top: 10px;
-}
-
-.music-library {
-  width: min(70vw, 700px);
-
-  max-height: 130px;
-
-  margin-top: 12px;
-
-  overflow-y: auto;
-}
-
-.track-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 12px;
-
-  min-height: 44px;
-
-  padding: 7px 11px;
-
-  border-bottom:
-    1px solid
-    rgba(255, 255, 255, 0.09);
-
-  cursor: pointer;
-}
-
-.track-row.active {
-  background:
-    rgba(110, 150, 255, 0.16);
-
-  border-radius: 14px;
-}
-
-.track-name {
-  min-width: 0;
-
-  flex: 1;
-
-  overflow: hidden;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  font-size: 12px;
-}
-
-
-/* ============================================================
-   レンジ
-   ============================================================ */
-
-.range-control {
-  width: 100%;
-
-  accent-color: #fff;
-}
-
-input[type="range"] {
-  height: 5px;
-}
-
-
-/* ============================================================
-   設定
-   ============================================================ */
-
-.settings-window {
-  padding-bottom: 18px;
-}
-
-.settings-layout {
-  height: calc(100% - 58px);
-
-  display: grid;
-
-  grid-template-columns:
-    180px
-    minmax(0, 1fr);
-
-  gap: 17px;
-}
-
-.settings-sidebar {
-  display: flex;
-  flex-direction: column;
-
-  gap: 5px;
-
-  padding: 8px;
-
-  overflow-y: auto;
-
-  border-radius: 24px;
-
-  background:
-    rgba(0, 0, 0, 0.12);
-}
-
-.settings-tab {
-  min-height: 44px;
-
-  padding: 10px 13px;
-
-  border-radius: 15px;
-
-  background: transparent;
-
-  color: rgba(255, 255, 255, 0.72);
-
-  text-align: left;
-
-  cursor: pointer;
-}
-
-.settings-tab.active {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(111, 142, 255, 0.40),
-      rgba(255, 255, 255, 0.11)
-    );
-
-  color: #fff;
-
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.23);
-}
-
-.settings-content {
-  min-width: 0;
-
-  overflow-y: auto;
-
-  padding:
-    5px
-    12px
-    25px;
-}
-
-.settings-panel {
-  display: none;
-}
-
-.settings-panel.active {
-  display: block;
-}
-
-.settings-panel h2 {
-  margin:
-    3px
-    0
-    17px;
-
-  font-size: 21px;
-}
-
-.setting-row {
-  min-height: 70px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 25px;
-
-  padding: 13px 4px;
-
-  border-bottom:
-    1px solid
-    rgba(255, 255, 255, 0.10);
-}
-
-.setting-row strong,
-.slider-setting strong,
-.select-setting strong {
-  display: block;
-
-  font-size: 13px;
-}
-
-.setting-row span {
-  display: block;
-
-  margin-top: 4px;
-
-  color: var(--text-soft);
-
-  font-size: 10px;
-}
-
-
-/* 壁紙 */
-
-.wallpaper-preview {
-  width: min(100%, 580px);
-  height: 180px;
-
-  border-radius: 27px;
-
-  background:
-    radial-gradient(
-      circle at 75% 22%,
-      rgba(255, 147, 101, 0.74),
-      transparent 28%
-    ),
-    linear-gradient(
-      155deg,
-      #17254e,
-      #704b78,
-      #d56e58
-    );
-
-  background-size: cover;
-  background-position: center;
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.25);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 12px 30px rgba(0, 0, 0, 0.20);
-}
-
-.settings-button-row {
-  display: flex;
-
-  gap: 9px;
-
-  margin-top: 12px;
-}
-
-
-/* 時計プレビュー */
-
-.clock-preview {
-  width: min(100%, 560px);
-  height: 150px;
-
-  border-radius: 999px;
-
-  display: grid;
-  place-items: center;
-
-  margin-bottom: 22px;
-
-  color: #fff;
-
-  font-size: clamp(54px, 8vw, 92px);
+#clockPageTime,
+#timerDisplay,
+#stopwatchDisplay {
+  font-size: clamp(65px, 15vw, 155px);
   font-weight: 200;
-
-  letter-spacing: -0.06em;
-
-  font-variant-numeric: tabular-nums;
+  letter-spacing: -.05em;
 }
 
-.setting-group {
-  margin: 17px 0;
+#clockPageDate {
+  font-size: clamp(16px, 2.5vw, 26px);
 }
 
-.setting-group > strong {
-  display: block;
+.action-button {
+  border: 0;
+  border-radius: 999px;
 
-  margin-bottom: 10px;
+  padding: 12px 24px;
 
-  font-size: 13px;
+  cursor: pointer;
 }
 
-.glass-color-row {
+.quick-presets,
+.timer-controls {
   display: flex;
-
-  gap: 12px;
-
   flex-wrap: wrap;
-}
-
-.glass-color {
-  width: 38px;
-  height: 38px;
-
-  border-radius: 50%;
-
-  border:
-    2px solid
-    rgba(255, 255, 255, 0.18);
-
-  background:
-    rgb(var(--swatch));
-
-  box-shadow:
-    inset 0 2px 3px rgba(255, 255, 255, 0.42),
-    0 6px 15px rgba(0, 0, 0, 0.18);
-
-  cursor: pointer;
-
-  transition:
-    transform 0.25s
-    cubic-bezier(0.2, 1.5, 0.3, 1),
-    border 0.2s ease;
-}
-
-.glass-color.active {
-  border-color: #fff;
-
-  transform: scale(1.16);
-
-  box-shadow:
-    0 0 0 4px rgba(255, 255, 255, 0.13),
-    inset 0 2px 3px rgba(255, 255, 255, 0.5);
-}
-
-.slider-setting {
-  display: block;
-
-  max-width: 620px;
-
-  margin: 22px 0;
-}
-
-.slider-setting > span {
-  display: flex;
-  justify-content: space-between;
-
-  margin-bottom: 8px;
-}
-
-.slider-setting output {
-  color: var(--text-soft);
-
-  font-size: 11px;
-}
-
-.select-setting {
-  display: block;
-
-  max-width: 620px;
-
-  margin: 22px 0;
-}
-
-.select-setting select {
-  width: 100%;
-  height: 44px;
-
-  margin-top: 9px;
-
-  padding: 0 13px;
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.16);
-
-  border-radius: 15px;
-
-  outline: 0;
-
-  background:
-    rgba(255, 255, 255, 0.11);
-
-  color: #fff;
-}
-
-.select-setting option {
-  color: #111;
-}
-
-
-/* データ */
-
-.danger-card {
-  max-width: 650px;
-
-  padding: 18px;
-
-  border-radius: 25px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 20px;
-}
-
-.danger-card strong {
-  font-size: 14px;
-}
-
-.danger-card p {
-  margin: 6px 0 0;
-
-  color: var(--text-soft);
-
-  font-size: 10px;
-}
-
-.danger-button {
-  min-width: 120px;
-
-  padding: 10px 16px;
-
-  border-radius: 20px;
-
-  background:
-    rgba(255, 78, 88, 0.18);
-
-  border:
-    1px solid
-    rgba(255, 100, 108, 0.45);
-
-  color: #ffb6ba;
-
-  cursor: pointer;
-}
-
-
-/* ============================================================
-   Luma OS 1 アイコン
-   ============================================================ */
-
-.version-card {
-  max-width: 580px;
-
-  padding: 22px;
-
-  border-radius: 30px;
-
-  display: flex;
-  align-items: center;
-
-  gap: 22px;
-}
-
-.luma-one-icon {
-  position: relative;
-
-  width: 110px;
-  height: 110px;
-
-  flex: 0 0 110px;
-
-  border-radius: 29px;
-
-  display: grid;
-  place-items: center;
-
-  overflow: hidden;
-
-  background:
-    radial-gradient(
-      circle at 55% 48%,
-      rgba(255, 255, 255, 0.35),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at 68% 22%,
-      rgba(87, 182, 255, 0.65),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 35% 74%,
-      rgba(255, 143, 71, 0.55),
-      transparent 34%
-    ),
-    linear-gradient(
-      145deg,
-      rgba(85, 89, 255, 0.68),
-      rgba(255, 91, 173, 0.44),
-      rgba(255, 176, 79, 0.50)
-    );
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.55);
-
-  box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.55),
-    inset 0 -4px 12px rgba(0, 0, 0, 0.18),
-    0 10px 30px rgba(0, 0, 0, 0.25);
-}
-
-.luma-one-icon::before {
-  content: "";
-
-  position: absolute;
-
-  width: 72px;
-  height: 72px;
-
-  border-radius: 50%;
-
-  border:
-    2px solid
-    rgba(255, 255, 255, 0.62);
-
-  box-shadow:
-    inset 0 0 18px rgba(255, 255, 255, 0.28),
-    0 0 20px rgba(119, 190, 255, 0.28);
-}
-
-.luma-one-icon::after {
-  content: "";
-
-  position: absolute;
-
-  width: 170%;
-  height: 25px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.75),
-      transparent
-    );
-
-  transform: rotate(-35deg);
-
-  filter: blur(8px);
-
-  opacity: 0.45;
-}
-
-.luma-one-icon span {
-  position: relative;
-
-  z-index: 2;
-
-  font-size: 79px;
-  font-weight: 270;
-  line-height: 1;
-
-  color: #fff;
-
-  text-shadow:
-    0 0 3px #fff,
-    0 0 8px #fff,
-    0 0 15px #79d9ff,
-    0 0 24px #7b7cff,
-    0 0 34px #ff6ecf,
-    0 0 48px #ffb14f;
-}
-
-.version-card strong {
-  font-size: 22px;
-}
-
-.version-card p {
-  margin: 5px 0 0;
-
-  color: var(--text-soft);
-}
-
-.version-description {
-  margin-top: 17px;
-
-  color: var(--text-soft);
-
-  font-size: 13px;
-}
-
-
-/* ============================================================
-   サイドメニュー
-   ============================================================ */
-
-.side-menu {
-  position: fixed;
-
-  z-index: 100;
-
-  top: calc(14px + var(--safe-top));
-  bottom: calc(14px + var(--safe-bottom));
-  left: calc(14px + var(--safe-left));
-
-  width: min(300px, 78vw);
-
-  border-radius: 31px;
-
-  padding: 15px;
-
-  display: flex;
-  flex-direction: column;
-
-  transform: translateX(calc(-100% - 35px));
-
-  opacity: 0;
-
-  pointer-events: none;
-
-  transition:
-    transform 0.42s
-    cubic-bezier(0.18, 1, 0.25, 1),
-    opacity 0.25s ease;
-}
-
-.side-menu.open {
-  transform: translateX(0);
-
-  opacity: 1;
-
-  pointer-events: auto;
-}
-
-.menu-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 3px 3px 10px 8px;
-}
-
-.menu-header strong {
-  font-size: 19px;
-}
-
-.menu-scroll {
-  min-height: 0;
-
-  flex: 1;
-
-  overflow-y: auto;
-
-  padding: 2px 2px 10px;
-
-  overscroll-behavior: contain;
-
-  -webkit-overflow-scrolling: touch;
-
-  scrollbar-width: none;
-}
-
-.menu-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.menu-item {
-  width: 100%;
-  min-height: 47px;
-
-  margin-bottom: 4px;
-
-  padding: 9px 13px;
-
-  border-radius: 17px;
-
-  display: flex;
-  align-items: center;
-
-  gap: 12px;
-
-  background: transparent;
-
-  color: rgba(255, 255, 255, 0.82);
-
-  text-align: left;
-
-  cursor: pointer;
-}
-
-.menu-item > span {
-  width: 25px;
-
-  display: inline-grid;
-  place-items: center;
-
-  font-size: 20px;
-}
-
-.menu-item.active {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(108, 140, 255, 0.55),
-      rgba(255, 255, 255, 0.15)
-    );
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.25);
-
-  color: #fff;
-
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 7px 20px rgba(58, 76, 180, 0.20);
-}
-
-.menu-version {
-  padding-top: 8px;
-
-  color: var(--text-faint);
-
-  font-size: 9px;
-  text-align: center;
-}
-
-
-/* ============================================================
-   メニュー背景
-   ============================================================ */
-
-.menu-backdrop {
-  position: fixed;
-  inset: 0;
-
-  z-index: 90;
-
-  display: block;
-
-  opacity: 0;
-
-  pointer-events: none;
-
-  background:
-    rgba(3, 5, 12, 0.22);
-
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-
-  transition: opacity 0.25s ease;
-}
-
-.menu-backdrop.show {
-  opacity: 1;
-
-  pointer-events: auto;
-}
-
-
-/* ============================================================
-   モーダル
-   ============================================================ */
-
-.modal-layer {
-  position: fixed;
-  inset: 0;
-
-  z-index: 200;
-
-  display: none;
-
-  align-items: center;
   justify-content: center;
-
-  padding:
-    calc(18px + var(--safe-top))
-    calc(18px + var(--safe-right))
-    calc(18px + var(--safe-bottom))
-    calc(18px + var(--safe-left));
-
-  background:
-    rgba(2, 5, 14, 0.34);
-
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-.modal-layer.show {
-  display: flex;
-}
-
-.modal-card {
-  width: min(480px, 92vw);
-
-  max-height: 90vh;
-
-  overflow-y: auto;
-
-  padding: 21px;
-
-  border-radius: 30px;
-}
-
-.weather-modal-card {
-  width: min(590px, 92vw);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 20px;
-
-  margin-bottom: 17px;
-}
-
-.modal-header h2 {
-  margin: 0;
-
-  font-size: 20px;
-}
-
-.form-field {
-  display: block;
-
-  margin-bottom: 14px;
-}
-
-.form-field > span {
-  display: block;
-
-  margin-bottom: 6px;
-
-  color: var(--text-soft);
-
-  font-size: 10px;
-}
-
-.form-field input,
-.form-field select,
-.weather-search-row input {
-  width: 100%;
-  height: 45px;
-
-  padding: 0 13px;
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.18);
-
-  border-radius: 15px;
-
-  outline: 0;
-
-  background:
-    rgba(255, 255, 255, 0.11);
-
-  color: #fff;
-}
-
-.form-field select option {
-  color: #111;
-}
-
-.form-grid {
-  display: grid;
-
-  grid-template-columns:
-    1fr 1fr;
 
   gap: 10px;
 }
 
-.modal-primary {
-  width: 100%;
-  height: 46px;
+.quick-presets button {
+  border: 1px solid rgba(255,255,255,.4);
 
-  border-radius: 22px;
+  background: rgba(255,255,255,.18);
 
-  margin-top: 4px;
+  color: white;
 
-  cursor: pointer;
+  border-radius: 999px;
+  padding: 10px 17px;
 }
 
-
-/* ============================================================
-   天気検索
-   ============================================================ */
-
-.weather-search-row {
+.card-list {
   display: grid;
+  gap: 10px;
 
-  grid-template-columns:
-    1fr auto;
-
-  gap: 8px;
+  padding: 8px 2px 30px;
 }
 
-.search-button {
-  min-width: 75px;
+.list-card {
+  border-radius: 25px;
+  padding: 16px 20px;
 
-  border-radius: 16px;
+  display: flex;
+  align-items: center;
 
-  padding: 0 17px;
-
-  cursor: pointer;
+  gap: 14px;
 }
 
-.search-status {
-  min-height: 27px;
-
-  padding: 9px 2px 3px;
-
-  color: var(--text-soft);
-
-  font-size: 10px;
+.list-card .grow {
+  flex: 1;
 }
 
-.weather-search-results {
-  max-height: 260px;
+.list-card button {
+  border: 0;
+  border-radius: 999px;
 
-  overflow-y: auto;
+  padding: 8px 13px;
+
+  background: rgba(255,255,255,.18);
 }
 
-.weather-result {
-  width: 100%;
+.world-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
 
-  min-height: 53px;
+  gap: 12px;
 
-  margin-bottom: 6px;
+  padding: 10px 0;
+}
 
-  padding: 9px 13px;
+.world-card {
+  min-height: 120px;
 
-  border-radius: 16px;
+  border-radius: 30px;
+  padding: 20px;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
 
+.world-card strong {
+  font-size: clamp(30px, 6vw, 60px);
+  font-weight: 300;
+}
+
+.weather-layout {
+  display: grid;
   gap: 12px;
-
-  border:
-    1px solid
-    rgba(255, 255, 255, 0.14);
-
-  background:
-    rgba(255, 255, 255, 0.08);
-
-  color: #fff;
-
-  text-align: left;
-
-  cursor: pointer;
+  padding-bottom: 25px;
 }
 
-.weather-result strong {
-  display: block;
-}
+.weather-large {
+  border-radius: 35px;
+  padding: 25px;
 
-.weather-result small {
-  display: block;
-
-  margin-top: 3px;
-
-  color: var(--text-soft);
-}
-
-
-/* ============================================================
-   トースト
-   ============================================================ */
-
-.toast {
-  position: fixed;
-
-  z-index: 300;
-
-  left: 50%;
-  bottom: calc(25px + var(--safe-bottom));
-
-  max-width: min(420px, 82vw);
-
-  padding: 11px 18px;
-
-  border-radius: 999px;
-
-  transform:
-    translate(-50%, 25px)
-    scale(0.94);
-
-  opacity: 0;
-
-  pointer-events: none;
-
-  color: #fff;
-
-  font-size: 12px;
-  text-align: center;
-
-  transition:
-    transform 0.3s
-    cubic-bezier(0.2, 1.4, 0.3, 1),
-    opacity 0.25s ease;
-}
-
-.toast.show {
-  transform:
-    translate(-50%, 0)
-    scale(1);
-
-  opacity: 1;
-}
-
-
-/* ============================================================
-   鳴動画面
-   ============================================================ */
-
-.ring-overlay {
-  position: fixed;
-  inset: 0;
-
-  z-index: 400;
-
-  display: none;
-
+  display: flex;
   align-items: center;
-  justify-content: center;
 
-  background:
-    rgba(1, 3, 10, 0.52);
-
-  -webkit-backdrop-filter: blur(22px);
-  backdrop-filter: blur(22px);
+  gap: 20px;
 }
 
-.ring-overlay.show {
+.weather-big-icon {
+  font-size: clamp(60px, 10vw, 100px);
+}
+
+.weather-big-temp {
+  font-size: clamp(60px, 12vw, 120px);
+  font-weight: 200;
+}
+
+.weather-search {
+  border-radius: 999px;
+  padding: 7px;
+
   display: flex;
 }
 
-.ring-card {
-  width: min(440px, 86vw);
+.weather-search input {
+  flex: 1;
+  min-width: 0;
 
-  padding: 35px;
+  border: 0;
+  outline: 0;
+  background: transparent;
 
-  border-radius: 45px;
+  color: white;
+
+  padding: 8px 14px;
+}
+
+.weather-search input::placeholder {
+  color: rgba(255,255,255,.6);
+}
+
+.weather-search button {
+  border: 0;
+  border-radius: 999px;
+
+  padding: 8px 18px;
+
+  background: rgba(255,255,255,.25);
+}
+
+.forecast-row {
+  border-radius: 30px;
+  padding: 15px;
+
+  display: flex;
+  gap: 10px;
+
+  overflow-x: auto;
+}
+
+.forecast-item {
+  min-width: 75px;
+
+  text-align: center;
+
+  padding: 8px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 12px;
+
+  padding: 8px 0 30px;
+}
+
+.settings-card {
+  border-radius: 30px;
+  padding: 20px;
+}
+
+.settings-card h2 {
+  margin-top: 0;
+}
+
+.settings-card label {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+
+  margin: 15px 0;
+
+  font-size: 13px;
+}
+
+.toggle-row {
+  flex-direction: row !important;
+  justify-content: space-between;
+}
+
+.settings-normal-button,
+.file-button {
+  width: 100%;
+
+  border: 0;
+  border-radius: 999px;
+
+  padding: 10px;
+
+  background: rgba(255,255,255,.18);
+  color: white;
 
   text-align: center;
 }
 
-.ring-icon {
-  font-size: 55px;
+.file-button input {
+  display: none;
 }
 
-.ring-title {
-  margin-top: 12px;
-
-  font-size: 27px;
-  font-weight: 700;
+.update-card {
+  text-align: center;
 }
 
-.ring-subtitle {
-  margin-top: 7px;
+.update-orb,
+.boot-orb {
+  margin: auto;
 
-  color: var(--text-soft);
-}
+  border-radius: 50%;
 
-.ring-stop-button {
-  min-width: 170px;
-
-  margin-top: 25px;
-
-  padding: 13px 25px;
-
-  border-radius: 26px;
+  display: grid;
+  place-items: center;
 
   background:
-    linear-gradient(
-      145deg,
-      #ff686f,
-      #db3947
+    radial-gradient(
+      circle at 35% 25%,
+      rgba(255,255,255,.9),
+      rgba(80,150,255,.5) 20%,
+      rgba(58,75,180,.38) 50%,
+      rgba(255,130,210,.28) 80%
     );
 
-  color: #fff;
+  border: 1px solid rgba(255,255,255,.75);
 
-  cursor: pointer;
+  box-shadow:
+    inset 0 0 30px rgba(255,255,255,.5),
+    0 0 35px rgba(80,150,255,.7);
 }
 
+.update-orb {
+  width: 90px;
+  height: 90px;
+}
 
-/* ============================================================
-   縦画面警告
-   ============================================================ */
+.update-orb span {
+  font-size: 55px;
+  font-weight: 200;
+}
 
-.portrait-warning {
+.side-menu {
   position: fixed;
-  inset: 0;
 
-  z-index: 9999;
+  top: 12px;
+  bottom: 12px;
+  left: 12px;
 
-  display: none;
+  width: min(330px, 72vw);
 
+  border-radius: 35px;
+  padding: 25px;
+
+  z-index: 50;
+
+  transform: translateX(calc(-100% - 30px));
+
+  transition:
+    transform .45s cubic-bezier(.2,1,.3,1);
+}
+
+.side-menu.open {
+  transform: translateX(0);
+}
+
+.side-menu button {
+  display: block;
+  width: 100%;
+
+  border: 0;
+  border-radius: 18px;
+
+  background: transparent;
+  color: white;
+
+  padding: 11px;
+
+  text-align: left;
+}
+
+.close-menu {
+  font-size: 24px;
+}
+
+.dynamic-island {
+  position: fixed;
+
+  top: max(10px, var(--safe-top));
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  z-index: 80;
+
+  min-width: 125px;
+  height: 36px;
+
+  border: 0;
+  border-radius: 999px;
+
+  background: rgba(8,9,16,.92);
+  color: white;
+
+  padding: 5px 14px;
+
+  display: flex;
   align-items: center;
   justify-content: center;
 
-  padding: 30px;
+  gap: 8px;
+
+  transition:
+    width .45s cubic-bezier(.2,1.5,.3,1),
+    height .45s cubic-bezier(.2,1.5,.3,1);
+}
+
+.dynamic-island.expanded {
+  min-width: 250px;
+  height: 55px;
+}
+
+.island-copy {
+  display: flex;
+  flex-direction: column;
+
+  text-align: left;
+}
+
+.island-copy small {
+  opacity: .55;
+  font-size: 8px;
+}
+
+.island-copy strong {
+  font-size: 11px;
+}
+
+.luma-peek {
+  position: fixed;
+
+  left: 50%;
+  top: 50%;
+
+  transform:
+    translate(-50%, -50%)
+    scale(.8);
+
+  width: min(520px, 80vw);
+
+  border-radius: 35px;
+  padding: 20px;
+
+  z-index: 60;
+
+  display: flex;
+  justify-content: space-around;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition:
+    opacity .3s,
+    transform .4s cubic-bezier(.2,1.5,.3,1);
+}
+
+.luma-peek.show {
+  opacity: 1;
+
+  transform:
+    translate(-50%, -50%)
+    scale(1);
+}
+
+.luma-peek div {
+  display: flex;
+  flex-direction: column;
+
+  text-align: center;
+}
+
+.luma-peek small {
+  opacity: .6;
+}
+
+.focus-mode,
+.night-clock {
+  position: fixed;
+  inset: 0;
+
+  z-index: 100;
+
+  display: none;
+}
+
+.focus-mode.show,
+.night-clock.show {
+  display: flex;
+}
+
+.focus-mode {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      #355b55,
+      #122e31 45%,
+      #081416
+    );
+
+  align-items: center;
+  justify-content: center;
+}
+
+.focus-content {
+  text-align: center;
+}
+
+.focus-content strong {
+  display: block;
+
+  font-size: clamp(90px, 20vw, 200px);
+  font-weight: 200;
+}
+
+.focus-play {
+  width: 75px;
+  height: 75px;
+
+  border: 0;
+  border-radius: 50%;
+
+  font-size: 25px;
+}
+
+.focus-close,
+.night-close {
+  position: absolute;
+  right: 25px;
+  top: 20px;
+
+  width: 45px;
+  height: 45px;
+
+  border: 0;
+  border-radius: 50%;
+}
+
+.night-clock {
+  background:
+    radial-gradient(
+      circle at 50% 100%,
+      #172d52,
+      #07101f 50%,
+      #02050b
+    );
+
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+#nightTime {
+  font-size: clamp(110px, 25vw, 260px);
+  font-weight: 200;
+}
+
+#nightDate {
+  font-size: clamp(20px, 3vw, 32px);
+}
+
+.luma-dialog {
+  border: 1px solid rgba(255,255,255,.45);
+  border-radius: 30px;
+
+  color: white;
+
+  background: rgba(110,145,210,.7);
+
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+
+  box-shadow: 0 20px 70px rgba(20,40,100,.3);
+}
+
+.luma-dialog::backdrop {
+  background: rgba(20,30,60,.3);
+  backdrop-filter: blur(8px);
+}
+
+.luma-dialog form {
+  display: grid;
+  gap: 12px;
+
+  min-width: min(360px, 75vw);
+}
+
+.luma-dialog input {
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 14px;
+
+  padding: 12px;
+
+  background: rgba(255,255,255,.15);
+  color: white;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 8px;
+}
+
+.dialog-buttons button {
+  border: 0;
+  border-radius: 999px;
+
+  padding: 9px 14px;
+}
+
+.boot-screen {
+  position: fixed;
+  inset: 0;
+
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      #172e72,
+      #081326 55%,
+      #02050d
+    );
+
+  transition:
+    opacity .7s ease,
+    visibility .7s ease;
+}
+
+.boot-screen.hide {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.boot-orb {
+  width: clamp(130px, 25vw, 220px);
+  height: clamp(130px, 25vw, 220px);
+
+  animation: bootPulse 1.5s ease-in-out infinite alternate;
+}
+
+.boot-orb span {
+  font-size: clamp(90px, 17vw, 150px);
+  font-weight: 200;
+
+  text-shadow:
+    0 0 20px white,
+    0 0 45px #69b9ff;
+}
+
+.boot-title {
+  margin-top: 25px;
+
+  font-size: 25px;
+  letter-spacing: .05em;
+}
+
+.boot-subtitle {
+  margin-top: 7px;
+  opacity: .55;
+}
+
+@keyframes bootPulse {
+  from {
+    transform: scale(.97);
+    filter: brightness(.9);
+  }
+
+  to {
+    transform: scale(1.04);
+    filter: brightness(1.2);
+  }
+}
+
+#portraitWarning {
+  position: fixed;
+  inset: 0;
+
+  z-index: 900;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
 
   background:
     linear-gradient(
-      145deg,
-      #10162b,
-      #312b55,
-      #7a4a66
+      150deg,
+      #8db5ff,
+      #d6b9ef,
+      #ffc4a5
     );
 }
 
 .portrait-card {
-  width: min(340px, 88vw);
+  border-radius: 35px;
 
-  padding: 35px 25px;
-
-  border-radius: 36px;
+  padding: 35px;
 
   text-align: center;
 }
 
 .rotate-icon {
-  font-size: 54px;
-
-  animation:
-    rotateHint 2.3s
-    ease-in-out
-    infinite;
+  font-size: 60px;
 }
 
-.portrait-card h2 {
-  margin: 10px 0 4px;
-
-  font-size: 28px;
+.hidden {
+  display: none !important;
 }
 
-.portrait-card p {
-  margin: 0;
+.lap-list {
+  max-height: 130px;
+  overflow: auto;
 
-  color: var(--text-soft);
+  width: min(500px, 80vw);
+
+  text-align: center;
 }
 
-@keyframes rotateHint {
-  0%,
-  100% {
-    transform: rotate(-20deg);
-  }
-
-  50% {
-    transform: rotate(70deg);
+@media (orientation: portrait) {
+  #portraitWarning {
+    display: flex;
   }
 }
 
-
-/* ============================================================
-   時計フォント
-   ============================================================ */
-
-body.clock-font-thin .clock-text,
-body.clock-font-thin #largeClockText,
-body.clock-font-thin .clock-preview {
-  font-family:
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
-
-  font-weight: 200;
-}
-
-body.clock-font-system .clock-text,
-body.clock-font-system #largeClockText,
-body.clock-font-system .clock-preview {
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-
-  font-weight: 300;
-}
-
-body.clock-font-rounded .clock-text,
-body.clock-font-rounded #largeClockText,
-body.clock-font-rounded .clock-preview {
-  font-family:
-    ui-rounded,
-    "SF Pro Rounded",
-    -apple-system,
-    sans-serif;
-
-  font-weight: 300;
-}
-
-
-/* ============================================================
-   スクロールバー
-   ============================================================ */
-
-.tool-list::-webkit-scrollbar,
-.settings-content::-webkit-scrollbar,
-.music-library::-webkit-scrollbar,
-.weather-search-results::-webkit-scrollbar,
-.world-clock-list::-webkit-scrollbar,
-.lap-list::-webkit-scrollbar {
-  width: 5px;
-}
-
-.tool-list::-webkit-scrollbar-thumb,
-.settings-content::-webkit-scrollbar-thumb,
-.music-library::-webkit-scrollbar-thumb,
-.weather-search-results::-webkit-scrollbar-thumb,
-.world-clock-list::-webkit-scrollbar-thumb,
-.lap-list::-webkit-scrollbar-thumb {
-  border-radius: 99px;
-
-  background:
-    rgba(255, 255, 255, 0.20);
-}
-
-
-/* ============================================================
-   小さい横画面
-   ============================================================ */
-
-@media (orientation: landscape) and (max-height: 560px) {
-
-  .app {
-    padding-top:
-      calc(10px + var(--safe-top));
+@media (max-height: 520px) {
+  .topbar {
+    height: 40px;
   }
 
-  #menuButton {
-    top:
-      calc(12px + var(--safe-top));
-
-    width: 46px;
-    height: 46px;
-  }
-
-  .dynamic-island {
-    top:
-      calc(10px + var(--safe-top));
-
-    min-height: 47px;
-
-    width: 245px;
-  }
-
-  .home-weather {
-    top:
-      calc(11px + var(--safe-top));
-
-    height: 47px;
+  .page {
+    height: calc(100% - 40px);
   }
 
   .home-layout {
-    inset:
-      calc(64px + var(--safe-top))
-      20px
-      9px
-      20px;
+    height: calc(100% - 72px);
   }
 
-  .home-date {
-    margin-bottom: 5px;
-
-    font-size: 15px;
+  .dock {
+    min-height: 60px;
   }
 
-  .clock-glass {
-    width: min(56vw, 590px);
-    min-width: 360px;
-
-    height: min(27vh, 170px);
+  .dock-icon {
+    width: 34px;
   }
 
-  .clock-text {
-    font-size:
-      clamp(72px, 13vw, 128px);
+  .clock-time {
+    font-size: clamp(65px, 14vw, 125px);
   }
 
-  .clock-seconds {
-    margin-bottom: 20px;
+  .peek-hint {
+    display: none;
   }
 
-  .home-reminder-card {
-    max-height: 135px;
-
-    margin-top: 8px;
-
-    padding:
-      9px
-      15px;
+  .sun-track {
+    margin-top: 3px;
   }
+}
 
-  .home-reminder-list {
-    max-height: 88px;
-  }
-
-  .tool-page {
-    padding:
-      calc(10px + var(--safe-top))
-      calc(12px + var(--safe-right))
-      calc(10px + var(--safe-bottom))
-      calc(12px + var(--safe-left));
-  }
-
-  .tool-window {
-    padding:
-      14px
-      18px;
-
-    border-radius: 27px;
-  }
-
-  .tool-header {
-    height: 47px;
-  }
-
-  .tool-header h1 {
-    font-size: 20px;
-  }
-
-  .circle-button {
-    width: 40px;
-    height: 40px;
-
-    flex-basis: 40px;
-
-    font-size: 20px;
-  }
-
-  .timer-display {
-    height: 105px;
-
-    font-size:
-      clamp(45px, 7.5vw, 78px);
-  }
-
-  .stopwatch-display {
-    height: 115px;
-
-    font-size:
-      clamp(48px, 8vw, 84px);
-  }
-
-  .timer-layout,
-  .stopwatch-layout {
-    gap: 9px;
-  }
-
-  .large-clock-glass {
-    height: min(41vh, 210px);
-  }
-
-  #largeClockText {
-    font-size:
-      clamp(85px, 15vw, 150px);
-  }
-
-  #largeClockSeconds {
-    margin-bottom: 30px;
-  }
-
-  .weather-main {
-    padding:
-      10px
-      20px;
-  }
-
-  .weather-icon {
-    font-size: 56px;
-  }
-
-  .weather-temperature {
-    font-size:
-      clamp(58px, 8vw, 82px);
-  }
-
-  .album-artwork {
-    width: 86px;
-    height: 86px;
-
-    flex-basis: 86px;
-
-    border-radius: 23px;
-  }
-
-  .album-note {
-    font-size: 34px;
-  }
-
-  .music-title {
-    margin-top: 7px;
-  }
-
-  .music-controls {
-    margin-top: 4px;
-  }
-
-  .music-play {
-    width: 55px;
-    height: 55px;
-  }
-
-  .settings-layout {
+@media (max-width: 740px) and (orientation: landscape) {
+  .home-layout {
     grid-template-columns:
-      155px
-      minmax(0, 1fr);
+      minmax(0, 1fr)
+      minmax(125px, 29%);
   }
 
-  .clock-preview {
-    height: 105px;
-
-    margin-bottom: 12px;
+  .dock-item > span:last-child {
+    font-size: 7px;
   }
 
-  .slider-setting {
-    margin: 13px 0;
+  .settings-grid {
+    grid-template-columns: 1fr 1fr;
   }
-
-}
-
-
-/* ============================================================
-   極端に横幅が狭い端末
-   ============================================================ */
-
-@media (orientation: landscape) and (max-width: 720px) {
-
-  .home-weather {
-    min-width: 125px;
-  }
-
-  .dynamic-island {
-    width: 220px;
-  }
-
-  .clock-glass {
-    min-width: 330px;
-  }
-
-  .world-clock-list {
-    grid-template-columns: 1fr;
-  }
-
-  .weather-stats {
-    width: 78vw;
-  }
-
-  .settings-layout {
-    grid-template-columns:
-      135px
-      minmax(0, 1fr);
-  }
-
-}
-
-
-/* ============================================================
-   縦画面
-   ============================================================ */
-
-@media (orientation: portrait) {
-
-  .portrait-warning {
-    display: flex;
-  }
-
-  .app {
-    visibility: hidden;
-  }
-
-}
-
-
-/* ============================================================
-   動きを減らす設定
-   ============================================================ */
-
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
 }
