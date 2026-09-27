@@ -1,4016 +1,2089 @@
-/* ============================================================
-   Luma OS 1.0
-   script.js
-   ============================================================ */
-
 "use strict";
 
+/* =========================================================
+   Luma OS 2.0
+   ========================================================= */
 
-/* ============================================================
-   0. 基本ユーティリティ
-   ============================================================ */
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 
-const $ = (selector, root = document) => root.querySelector(selector);
-const $$ = (selector, root = document) =>
-  Array.from(root.querySelectorAll(selector));
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function pad2(value) {
-  return String(value).padStart(2, "0");
-}
-
-function safeJSON(key, fallback) {
-  try {
-    const value = localStorage.getItem(key);
-
-    if (!value) return fallback;
-
-    return JSON.parse(value);
-  } catch (error) {
-    console.warn("Luma: JSON load failed", key, error);
-    return fallback;
-  }
-}
-
-function saveJSON(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (error) {
-    console.warn("Luma: JSON save failed", key, error);
-    return false;
-  }
-}
-
-function todayString(date = new Date()) {
-  const y = date.getFullYear();
-  const m = pad2(date.getMonth() + 1);
-  const d = pad2(date.getDate());
-
-  return `${y}-${m}-${d}`;
-}
-
-function escapeHTML(text) {
-  const div = document.createElement("div");
-  div.textContent = String(text ?? "");
-  return div.innerHTML;
-}
-
-function formatDuration(seconds) {
-  const total = Math.max(0, Math.floor(seconds));
-
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-
-  return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
-}
-
-function formatMediaTime(seconds) {
-  if (!Number.isFinite(seconds)) return "0:00";
-
-  const total = Math.max(0, Math.floor(seconds));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-
-  return `${m}:${pad2(s)}`;
-}
-
-function uid(prefix = "luma") {
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-
-  return `${prefix}-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2)}`;
-}
-
-
-/* ============================================================
-   1. 状態
-   ============================================================ */
-
-const DEFAULT_SETTINGS = {
-  showSeconds: false,
-  showHomeReminder: true,
-  showHomeWeather: true,
-
-  clockColor: "white",
-  clockOpacity: 70,
-  clockBrightness: 100,
-  clockFont: "thin",
-
-  squishStrength: 100,
-
-  wallpaperBrightness: 100,
-
-  timerIsland: true,
-  musicIsland: true,
-
-  weatherLocation: null
-};
-
-const state = {
-  settings: {
-    ...DEFAULT_SETTINGS,
-    ...safeJSON("lumaSettings", {})
-  },
-
-  alarms: safeJSON("lumaAlarms", []),
-
-  reminders: safeJSON("lumaReminders", []),
-
-  timer: {
-    running: false,
-    paused: false,
-    remainingMs: 0,
-    originalMs: 0,
-    endAt: 0,
-    interval: null
-  },
-
-  stopwatch: {
-    running: false,
-    startedAt: 0,
-    elapsedBeforeStart: 0,
-    interval: null,
-    laps: []
-  },
-
-  music: {
-    tracks: [],
-    currentIndex: -1,
-    objectURL: null
-  },
-
-  weather: {
-    loading: false,
-    data: null
-  },
-
-  ring: {
-    active: false,
-    type: null,
-    audioContext: null,
-    oscillator: null,
-    gain: null,
-    pulseInterval: null
-  },
-
-  currentPage: "home",
-
-  db: null,
-
-  toastTimer: null
-};
-
-
-/* ============================================================
-   2. DOM
-   ============================================================ */
-
-const dom = {};
-
-function cacheDOM() {
-  dom.wallpaper = $("#wallpaper");
-  dom.wallpaperPreview = $("#wallpaperPreview");
-
-  dom.menuButton = $("#menuButton");
-  dom.sideMenu = $("#sideMenu");
-  dom.menuCloseButton = $("#menuCloseButton");
-  dom.menuBackdrop = $("#menuBackdrop");
-
-  dom.dynamicIsland = $("#dynamicIsland");
-  dom.islandArtwork = $("#islandArtwork");
-  dom.islandTitle = $("#islandTitle");
-  dom.islandSubtitle = $("#islandSubtitle");
-  dom.islandRight = $("#islandRight");
-
-  dom.homeWeather = $("#homeWeather");
-  dom.homeWeatherIcon = $("#homeWeatherIcon");
-  dom.homeTemperature = $("#homeTemperature");
-  dom.homeWeatherCity = $("#homeWeatherCity");
-
-  dom.homeDate = $("#homeDate");
-  dom.clockText = $("#clockText");
-  dom.clockSeconds = $("#clockSeconds");
-
-  dom.largeClockText = $("#largeClockText");
-  dom.largeClockSeconds = $("#largeClockSeconds");
-  dom.largeClockDate = $("#largeClockDate");
-
-  dom.homeReminderCard = $("#homeReminderCard");
-  dom.homeReminderList = $("#homeReminderList");
-  dom.homeReminderAdd = $("#homeReminderAdd");
-
-  dom.alarmList = $("#alarmList");
-  dom.alarmEmpty = $("#alarmEmpty");
-
-  dom.timerDisplay = $("#timerDisplay");
-  dom.timerHours = $("#timerHours");
-  dom.timerMinutes = $("#timerMinutes");
-  dom.timerSecondsInput = $("#timerSecondsInput");
-
-  dom.stopwatchDisplay = $("#stopwatchDisplay");
-  dom.lapList = $("#lapList");
-
-  dom.reminderList = $("#reminderList");
-  dom.reminderEmpty = $("#reminderEmpty");
-
-  dom.weatherIcon = $("#weatherIcon");
-  dom.weatherTemperature = $("#weatherTemperature");
-  dom.weatherCity = $("#weatherCity");
-  dom.weatherDescription = $("#weatherDescription");
-  dom.weatherHigh = $("#weatherHigh");
-  dom.weatherLow = $("#weatherLow");
-  dom.weatherHumidity = $("#weatherHumidity");
-  dom.weatherWind = $("#weatherWind");
-  dom.weatherUpdated = $("#weatherUpdated");
-
-  dom.musicFileInput = $("#musicFileInput");
-  dom.audioPlayer = $("#audioPlayer");
-  dom.musicTitle = $("#musicTitle");
-  dom.musicArtist = $("#musicArtist");
-  dom.musicProgress = $("#musicProgress");
-  dom.musicCurrentTime = $("#musicCurrentTime");
-  dom.musicDuration = $("#musicDuration");
-  dom.musicPlay = $("#musicPlay");
-  dom.musicPrevious = $("#musicPrevious");
-  dom.musicNext = $("#musicNext");
-  dom.musicVolume = $("#musicVolume");
-  dom.musicLibrary = $("#musicLibrary");
-
-  dom.showSecondsSetting = $("#showSecondsSetting");
-  dom.showHomeReminderSetting = $("#showHomeReminderSetting");
-  dom.showHomeWeatherSetting = $("#showHomeWeatherSetting");
-
-  dom.wallpaperFileInput = $("#wallpaperFileInput");
-  dom.wallpaperBrightness = $("#wallpaperBrightness");
-  dom.wallpaperBrightnessValue = $("#wallpaperBrightnessValue");
-
-  dom.clockOpacity = $("#clockOpacity");
-  dom.clockOpacityValue = $("#clockOpacityValue");
-
-  dom.clockBrightness = $("#clockBrightness");
-  dom.clockBrightnessValue = $("#clockBrightnessValue");
-
-  dom.squishStrength = $("#squishStrength");
-  dom.squishStrengthValue = $("#squishStrengthValue");
-
-  dom.clockFontSetting = $("#clockFontSetting");
-
-  dom.timerIslandSetting = $("#timerIslandSetting");
-  dom.musicIslandSetting = $("#musicIslandSetting");
-
-  dom.reminderModal = $("#reminderModal");
-  dom.reminderTitleInput = $("#reminderTitleInput");
-  dom.reminderDateInput = $("#reminderDateInput");
-  dom.reminderTimeInput = $("#reminderTimeInput");
-
-  dom.alarmModal = $("#alarmModal");
-  dom.alarmTimeInput = $("#alarmTimeInput");
-  dom.alarmLabelInput = $("#alarmLabelInput");
-  dom.alarmRepeatInput = $("#alarmRepeatInput");
-
-  dom.weatherModal = $("#weatherModal");
-  dom.weatherSearchInput = $("#weatherSearchInput");
-  dom.weatherSearchStatus = $("#weatherSearchStatus");
-  dom.weatherSearchResults = $("#weatherSearchResults");
-
-  dom.toast = $("#toast");
-  dom.toastText = $("#toastText");
-
-  dom.ringOverlay = $("#ringOverlay");
-  dom.ringIcon = $("#ringIcon");
-  dom.ringTitle = $("#ringTitle");
-  dom.ringSubtitle = $("#ringSubtitle");
-}
-
-
-/* ============================================================
-   3. 安全実行
-   ============================================================ */
-
-function safeRun(name, fn) {
+const safe = (fn) => {
   try {
     return fn();
   } catch (error) {
-    console.error(`Luma: ${name} failed`, error);
-    return undefined;
+    console.error("Luma:", error);
   }
-}
+};
 
-async function safeRunAsync(name, fn) {
+const safeAsync = async (fn) => {
   try {
     return await fn();
   } catch (error) {
-    console.error(`Luma: ${name} failed`, error);
-    return undefined;
+    console.error("Luma:", error);
   }
-}
+};
 
 
-/* ============================================================
-   4. トースト
-   ============================================================ */
+/* =========================================================
+   STATE
+   ========================================================= */
 
-function showToast(message) {
-  if (!dom.toast || !dom.toastText) return;
+let settings = {
+  seconds: false,
+  trail: true,
+  scene: true,
+  brightness: 100,
+  blur: 0,
+  zoom: 100,
+  glassOpacity: 18,
+  glassBlur: 24,
+  reflection: 65
+};
 
-  dom.toastText.textContent = message;
+let alarms = [];
+let reminders = [];
 
-  dom.toast.classList.add("show");
+let timerSeconds = 300;
+let timerRemaining = 300;
+let timerInterval = null;
+let timerRunning = false;
 
-  clearTimeout(state.toastTimer);
+let stopwatchStartTime = 0;
+let stopwatchElapsed = 0;
+let stopwatchInterval = null;
 
-  state.toastTimer = setTimeout(() => {
-    dom.toast.classList.remove("show");
-  }, 2400);
-}
+let focusRemaining = 25 * 60;
+let focusInterval = null;
+
+let currentWeather = null;
+
+let peekTimer = null;
 
 
-/* ============================================================
-   5. ページ
-   ============================================================ */
+/* =========================================================
+   STORAGE
+   ========================================================= */
 
-function openPage(pageName) {
-  const target = $(`#page-${pageName}`);
+function loadState() {
+  safe(() => {
+    const savedSettings = localStorage.getItem("luma2_settings");
+    const savedAlarms = localStorage.getItem("luma2_alarms");
+    const savedReminders = localStorage.getItem("luma2_reminders");
 
-  if (!target) {
-    console.warn("Luma: page not found:", pageName);
-    return;
-  }
+    if (savedSettings) {
+      settings = {
+        ...settings,
+        ...JSON.parse(savedSettings)
+      };
+    }
 
-  $$(".page").forEach((page) => {
-    page.classList.remove("active");
+    if (savedAlarms) {
+      alarms = JSON.parse(savedAlarms);
+    }
+
+    if (savedReminders) {
+      reminders = JSON.parse(savedReminders);
+    }
   });
+}
 
-  target.classList.add("active");
+function saveSettings() {
+  localStorage.setItem(
+    "luma2_settings",
+    JSON.stringify(settings)
+  );
+}
 
-  state.currentPage = pageName;
+function saveAlarms() {
+  localStorage.setItem(
+    "luma2_alarms",
+    JSON.stringify(alarms)
+  );
+}
 
-  $$(".menu-item").forEach((item) => {
-    item.classList.toggle(
-      "active",
-      item.dataset.page === pageName
-    );
+function saveReminders() {
+  localStorage.setItem(
+    "luma2_reminders",
+    JSON.stringify(reminders)
+  );
+}
+
+
+/* =========================================================
+   WALLPAPER DATABASE
+   ========================================================= */
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request =
+      indexedDB.open("LumaOS2Database", 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+
+      if (!db.objectStoreNames.contains("assets")) {
+        db.createObjectStore("assets");
+      }
+    };
+
+    request.onsuccess = () =>
+      resolve(request.result);
+
+    request.onerror = () =>
+      reject(request.error);
   });
+}
 
-  closeMenu();
+async function saveWallpaper(blob) {
+  const db = await openDB();
 
-  safeRun("render page", () => {
-    if (pageName === "alarm") renderAlarms();
-    if (pageName === "reminder") renderReminders();
-    if (pageName === "music") renderMusicLibrary();
-    if (pageName === "weather") renderWeather();
+  return new Promise((resolve, reject) => {
+    const tx =
+      db.transaction("assets", "readwrite");
+
+    tx.objectStore("assets")
+      .put(blob, "wallpaper");
+
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
   });
 }
 
-function openMenu() {
-  dom.sideMenu?.classList.add("open");
-  dom.menuBackdrop?.classList.add("show");
+async function getWallpaper() {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx =
+      db.transaction("assets", "readonly");
+
+    const req =
+      tx.objectStore("assets")
+        .get("wallpaper");
+
+    req.onsuccess = () =>
+      resolve(req.result);
+
+    req.onerror = () =>
+      reject(req.error);
+  });
 }
 
-function closeMenu() {
-  dom.sideMenu?.classList.remove("open");
-  dom.menuBackdrop?.classList.remove("show");
+async function deleteWallpaper() {
+  const db = await openDB();
+
+  const tx =
+    db.transaction("assets", "readwrite");
+
+  tx.objectStore("assets")
+    .delete("wallpaper");
 }
 
 
-/* ============================================================
-   6. モーダル
-   ============================================================ */
+/* =========================================================
+   CLOCK
+   ========================================================= */
 
-function openModal(id) {
-  const modal = document.getElementById(id);
-
-  if (!modal) return;
-
-  modal.classList.add("show");
+function formatTime(date, seconds = false) {
+  return new Intl.DateTimeFormat(
+    "ja-JP",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: seconds ? "2-digit" : undefined,
+      hour12: false
+    }
+  ).format(date);
 }
 
-function closeModal(id) {
-  const modal = document.getElementById(id);
-
-  if (!modal) return;
-
-  modal.classList.remove("show");
+function formatDate(date) {
+  return new Intl.DateTimeFormat(
+    "ja-JP",
+    {
+      month: "long",
+      day: "numeric",
+      weekday: "short"
+    }
+  ).format(date);
 }
-
-
-/* ============================================================
-   7. 時計
-   ============================================================ */
-
-const dateFormatter = new Intl.DateTimeFormat("ja-JP", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  weekday: "short"
-});
 
 function updateClock() {
   const now = new Date();
 
-  const hh = pad2(now.getHours());
-  const mm = pad2(now.getMinutes());
-  const ss = pad2(now.getSeconds());
+  const hh =
+    String(now.getHours()).padStart(2, "0");
 
-  const main = `${hh}:${mm}`;
+  const mm =
+    String(now.getMinutes()).padStart(2, "0");
 
-  if (dom.clockText) {
-    dom.clockText.textContent = main;
-  }
+  const ss =
+    String(now.getSeconds()).padStart(2, "0");
 
-  if (dom.largeClockText) {
-    dom.largeClockText.textContent = main;
-  }
+  $("#clockText").textContent =
+    `${hh}:${mm}`;
 
-  if (dom.clockSeconds) {
-    dom.clockSeconds.textContent = ss;
-  }
+  $("#clockSeconds").textContent = ss;
 
-  if (dom.largeClockSeconds) {
-    dom.largeClockSeconds.textContent = ss;
-  }
+  $("#clockSeconds").style.display =
+    settings.seconds ? "block" : "none";
 
-  const dateText = dateFormatter.format(now);
+  $("#homeDate").textContent =
+    formatDate(now);
 
-  if (dom.homeDate) {
-    dom.homeDate.textContent = dateText;
-  }
+  $("#clockPageTime").textContent =
+    `${hh}:${mm}`;
 
-  if (dom.largeClockDate) {
-    dom.largeClockDate.textContent = dateText;
-  }
+  $("#clockPageDate").textContent =
+    formatDate(now);
 
-  updateWorldClocks(now);
+  $("#nightTime").textContent =
+    `${hh}:${mm}`;
 
+  $("#nightDate").textContent =
+    formatDate(now);
+
+  updateWorldClocks();
+  updateSunPosition(now);
+  updateScene(now);
   checkAlarms(now);
 }
 
-function updateWorldClocks(now = new Date()) {
-  $$("[data-timezone]").forEach((element) => {
-    const zone = element.dataset.timezone;
 
-    try {
-      element.textContent =
-        new Intl.DateTimeFormat("ja-JP", {
-          timeZone: zone,
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false
-        }).format(now);
-    } catch (error) {
-      element.textContent = "--:--";
-    }
-  });
+/* =========================================================
+   SUN POSITION
+   ========================================================= */
+
+function updateSunPosition(now) {
+  const minutes =
+    now.getHours() * 60 +
+    now.getMinutes();
+
+  const sunrise = 6 * 60;
+  const sunset = 18 * 60;
+
+  let percent =
+    ((minutes - sunrise) /
+      (sunset - sunrise)) * 100;
+
+  percent =
+    Math.max(0, Math.min(100, percent));
+
+  $("#sunDot").style.left =
+    `${percent}%`;
 }
 
 
-/* ============================================================
-   8. 設定
-   ============================================================ */
+/* =========================================================
+   LUMA SCENE
+   ========================================================= */
 
-const GLASS_COLORS = {
-  white: "255,255,255",
-  blue: "72,155,255",
-  purple: "176,104,255",
-  pink: "255,92,181",
-  orange: "255,164,66",
-  green: "64,220,150"
-};
+function updateScene(now) {
+  if (!settings.scene) {
+    $("#sceneOverlay").style.background =
+      "transparent";
 
-function saveSettings() {
-  saveJSON("lumaSettings", state.settings);
-}
-
-function applySettings() {
-  const s = state.settings;
-
-  const root = document.documentElement;
-
-  root.style.setProperty(
-    "--glass-rgb",
-    GLASS_COLORS[s.clockColor] || GLASS_COLORS.white
-  );
-
-  root.style.setProperty(
-    "--clock-opacity",
-    String(clamp(s.clockOpacity, 20, 100) / 100)
-  );
-
-  root.style.setProperty(
-    "--clock-brightness",
-    String(clamp(s.clockBrightness, 60, 160) / 100)
-  );
-
-  document.body.classList.remove(
-    "clock-font-thin",
-    "clock-font-system",
-    "clock-font-rounded"
-  );
-
-  document.body.classList.add(
-    `clock-font-${s.clockFont}`
-  );
-
-  if (dom.clockSeconds) {
-    dom.clockSeconds.style.display =
-      s.showSeconds ? "" : "none";
-  }
-
-  if (dom.largeClockSeconds) {
-    dom.largeClockSeconds.style.display =
-      s.showSeconds ? "" : "none";
-  }
-
-  if (dom.homeReminderCard) {
-    dom.homeReminderCard.style.display =
-      s.showHomeReminder ? "" : "none";
-  }
-
-  if (dom.homeWeather) {
-    dom.homeWeather.style.display =
-      s.showHomeWeather ? "" : "none";
-  }
-
-  if (dom.wallpaper) {
-    dom.wallpaper.style.filter =
-      `brightness(${s.wallpaperBrightness / 100})`;
-  }
-
-  syncSettingsUI();
-
-  updateIsland();
-}
-
-function syncSettingsUI() {
-  const s = state.settings;
-
-  if (dom.showSecondsSetting) {
-    dom.showSecondsSetting.checked = s.showSeconds;
-  }
-
-  if (dom.showHomeReminderSetting) {
-    dom.showHomeReminderSetting.checked =
-      s.showHomeReminder;
-  }
-
-  if (dom.showHomeWeatherSetting) {
-    dom.showHomeWeatherSetting.checked =
-      s.showHomeWeather;
-  }
-
-  if (dom.wallpaperBrightness) {
-    dom.wallpaperBrightness.value =
-      s.wallpaperBrightness;
-  }
-
-  if (dom.wallpaperBrightnessValue) {
-    dom.wallpaperBrightnessValue.textContent =
-      `${s.wallpaperBrightness}%`;
-  }
-
-  if (dom.clockOpacity) {
-    dom.clockOpacity.value = s.clockOpacity;
-  }
-
-  if (dom.clockOpacityValue) {
-    dom.clockOpacityValue.textContent =
-      `${s.clockOpacity}%`;
-  }
-
-  if (dom.clockBrightness) {
-    dom.clockBrightness.value =
-      s.clockBrightness;
-  }
-
-  if (dom.clockBrightnessValue) {
-    dom.clockBrightnessValue.textContent =
-      `${s.clockBrightness}%`;
-  }
-
-  if (dom.squishStrength) {
-    dom.squishStrength.value =
-      s.squishStrength;
-  }
-
-  if (dom.squishStrengthValue) {
-    dom.squishStrengthValue.textContent =
-      `${s.squishStrength}%`;
-  }
-
-  if (dom.clockFontSetting) {
-    dom.clockFontSetting.value =
-      s.clockFont;
-  }
-
-  if (dom.timerIslandSetting) {
-    dom.timerIslandSetting.checked =
-      s.timerIsland;
-  }
-
-  if (dom.musicIslandSetting) {
-    dom.musicIslandSetting.checked =
-      s.musicIsland;
-  }
-
-  $$(".glass-color").forEach((button) => {
-    button.classList.toggle(
-      "active",
-      button.dataset.color === s.clockColor
-    );
-  });
-}
-
-
-/* ============================================================
-   9. ボヨン / Liquid Glassタッチ
-   ============================================================ */
-
-function squishElement(element, event) {
-  if (!element) return;
-
-  const strength =
-    clamp(state.settings.squishStrength, 0, 150) / 100;
-
-  const rect = element.getBoundingClientRect();
-
-  const x =
-    clamp(
-      ((event.clientX - rect.left) / rect.width) * 100,
-      0,
-      100
-    );
-
-  const y =
-    clamp(
-      ((event.clientY - rect.top) / rect.height) * 100,
-      0,
-      100
-    );
-
-  element.style.setProperty("--touch-x", `${x}%`);
-  element.style.setProperty("--touch-y", `${y}%`);
-
-  const horizontal =
-    (x - 50) / 50;
-
-  const vertical =
-    (y - 50) / 50;
-
-  let xScale = 1 - 0.045 * strength;
-  let yScale = 1 - 0.075 * strength;
-
-  if (element.classList.contains("squishy-strong")) {
-    xScale = 1 - 0.060 * strength;
-    yScale = 1 - 0.105 * strength;
-  }
-
-  if (element.classList.contains("squishy-soft")) {
-    xScale = 1 - 0.020 * strength;
-    yScale = 1 - 0.028 * strength;
-  }
-
-  const rotate =
-    horizontal * 0.7 * strength;
-
-  element.style.setProperty(
-    "--squish-x",
-    String(Math.max(0.82, xScale))
-  );
-
-  element.style.setProperty(
-    "--squish-y",
-    String(Math.max(0.78, yScale))
-  );
-
-  element.style.setProperty(
-    "--squish-rotate",
-    `${rotate}deg`
-  );
-
-  element.style.setProperty(
-    "--release-x",
-    String(Math.max(0.82, xScale))
-  );
-
-  element.style.setProperty(
-    "--release-y",
-    String(Math.max(0.78, yScale))
-  );
-
-  element.classList.remove("is-rebounding");
-  element.classList.add("is-pressed");
-
-  /* タッチ位置で少し光の中心をずらす */
-  if (element.classList.contains("liquid-glass")) {
-    const glowX = 50 + horizontal * 18;
-    const glowY = 50 + vertical * 15;
-
-    element.style.setProperty(
-      "--touch-x",
-      `${glowX}%`
-    );
-
-    element.style.setProperty(
-      "--touch-y",
-      `${glowY}%`
-    );
-  }
-}
-
-function releaseSquish(element) {
-  if (!element) return;
-
-  if (!element.classList.contains("is-pressed")) {
     return;
   }
 
-  element.classList.remove("is-pressed");
+  const hour = now.getHours();
 
-  element.style.setProperty("--squish-x", "1");
-  element.style.setProperty("--squish-y", "1");
-  element.style.setProperty("--squish-rotate", "0deg");
+  let scene;
 
-  element.classList.remove("is-rebounding");
+  if (hour >= 5 && hour < 10) {
+    scene =
+      "linear-gradient(120deg, rgba(255,220,180,.18), rgba(180,215,255,.08))";
+  }
 
-  /* animation再起動 */
-  void element.offsetWidth;
+  else if (hour >= 10 && hour < 16) {
+    scene =
+      "linear-gradient(120deg, rgba(160,210,255,.06), rgba(255,255,255,.02))";
+  }
 
-  element.classList.add("is-rebounding");
+  else if (hour >= 16 && hour < 19) {
+    scene =
+      "linear-gradient(120deg, rgba(255,145,110,.24), rgba(255,190,170,.10))";
+  }
 
-  setTimeout(() => {
-    element.classList.remove("is-rebounding");
+  else {
+    scene =
+      "linear-gradient(120deg, rgba(15,30,80,.38), rgba(45,25,80,.28))";
+  }
 
-    element.style.setProperty("--touch-x", "50%");
-    element.style.setProperty("--touch-y", "50%");
-  }, 560);
+  $("#sceneOverlay").style.background =
+    scene;
 }
 
-function installSquish() {
-  const targets = [
-    ...$$(".squishy"),
-    ...$$(".squishy-soft")
-  ];
 
-  const uniqueTargets = [...new Set(targets)];
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
 
-  uniqueTargets.forEach((element) => {
-    element.addEventListener(
+function openPage(id) {
+  $$(".page").forEach((page) =>
+    page.classList.remove("active")
+  );
+
+  const target =
+    document.getElementById(id);
+
+  if (target) {
+    target.classList.add("active");
+  }
+
+  $("#sideMenu").classList.remove("open");
+}
+
+function setupNavigation() {
+  $$("[data-page]").forEach((button) => {
+    button.addEventListener("click", () => {
+      openPage(button.dataset.page);
+    });
+  });
+
+  $$(".back-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      openPage("homePage");
+    });
+  });
+
+  $("#menuButton").addEventListener(
+    "click",
+    () => {
+      $("#sideMenu").classList.add("open");
+    }
+  );
+
+  $("#closeMenu").addEventListener(
+    "click",
+    () => {
+      $("#sideMenu").classList.remove("open");
+    }
+  );
+
+  $("#settingsButton").addEventListener(
+    "click",
+    () => {
+      openPage("settingsPage");
+    }
+  );
+}
+
+
+/* =========================================================
+   LIVING GLASS
+   ========================================================= */
+
+function setupLivingGlass() {
+  $$("[data-glass]").forEach((glass) => {
+
+    glass.addEventListener(
       "pointerdown",
       (event) => {
-        if (event.pointerType === "mouse" &&
-            event.button !== 0) {
-          return;
-        }
 
-        squishElement(element, event);
-      },
-      { passive: true }
+        const rect =
+          glass.getBoundingClientRect();
+
+        const x =
+          event.clientX - rect.left;
+
+        const y =
+          event.clientY - rect.top;
+
+        glass.style.setProperty(
+          "--light-x",
+          `${(x / rect.width) * 100}%`
+        );
+
+        glass.style.setProperty(
+          "--light-y",
+          `${(y / rect.height) * 100}%`
+        );
+
+        glass.classList.add("pressed");
+
+        const ripple =
+          document.createElement("span");
+
+        ripple.className = "ripple";
+
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+
+        glass.appendChild(ripple);
+
+        setTimeout(
+          () => ripple.remove(),
+          800
+        );
+      }
     );
 
-    element.addEventListener(
+    const release = () => {
+      glass.classList.remove("pressed");
+    };
+
+    glass.addEventListener(
       "pointerup",
-      () => releaseSquish(element),
-      { passive: true }
+      release
     );
 
-    element.addEventListener(
+    glass.addEventListener(
       "pointercancel",
-      () => releaseSquish(element),
-      { passive: true }
+      release
     );
 
-    element.addEventListener(
+    glass.addEventListener(
       "pointerleave",
-      () => releaseSquish(element),
-      { passive: true }
+      release
     );
   });
 }
 
 
-/* ============================================================
-   10. リマインダー
-   ============================================================ */
+/* =========================================================
+   DEVICE TILT
+   ========================================================= */
 
-function sortReminders() {
-  state.reminders.sort((a, b) => {
-    const aDate =
-      `${a.date || "9999-99-99"}T${a.time || "23:59"}`;
+async function enableTilt() {
+  safeAsync(async () => {
 
-    const bDate =
-      `${b.date || "9999-99-99"}T${b.time || "23:59"}`;
+    if (
+      typeof DeviceOrientationEvent !==
+        "undefined" &&
+      typeof DeviceOrientationEvent
+        .requestPermission === "function"
+    ) {
+      const permission =
+        await DeviceOrientationEvent
+          .requestPermission();
 
-    return aDate.localeCompare(bDate);
+      if (permission !== "granted") {
+        return;
+      }
+    }
+
+    window.addEventListener(
+      "deviceorientation",
+      (event) => {
+
+        const gamma =
+          Math.max(
+            -20,
+            Math.min(20, event.gamma || 0)
+          );
+
+        const beta =
+          Math.max(
+            -20,
+            Math.min(20, event.beta || 0)
+          );
+
+        const rx = beta / 15;
+        const ry = gamma / 15;
+
+        $$("[data-glass]").forEach(
+          (glass) => {
+
+            glass.style.setProperty(
+              "--tilt-x",
+              `${-rx}deg`
+            );
+
+            glass.style.setProperty(
+              "--tilt-y",
+              `${ry}deg`
+            );
+
+            glass.style.setProperty(
+              "--light-x",
+              `${50 + gamma}%`
+            );
+
+            glass.style.setProperty(
+              "--light-y",
+              `${50 + beta / 2}%`
+            );
+          }
+        );
+      }
+    );
   });
 }
 
-function saveReminders() {
-  saveJSON("lumaReminders", state.reminders);
+
+/* iOSはユーザー操作が必要なので、
+   最初のタップで許可を試す */
+
+document.addEventListener(
+  "pointerdown",
+  () => enableTilt(),
+  { once: true }
+);
+
+
+/* =========================================================
+   GLASS TRAIL
+   ========================================================= */
+
+const trailCanvas =
+  $("#trailCanvas");
+
+const trailCtx =
+  trailCanvas.getContext("2d");
+
+let trails = [];
+
+function resizeTrailCanvas() {
+  const dpr =
+    Math.min(window.devicePixelRatio || 1, 2);
+
+  trailCanvas.width =
+    innerWidth * dpr;
+
+  trailCanvas.height =
+    innerHeight * dpr;
+
+  trailCanvas.style.width =
+    `${innerWidth}px`;
+
+  trailCanvas.style.height =
+    `${innerHeight}px`;
+
+  trailCtx.setTransform(
+    dpr, 0, 0, dpr, 0, 0
+  );
 }
 
-function renderReminders() {
-  sortReminders();
+function addTrail(x, y) {
+  if (!settings.trail) return;
 
-  if (!dom.reminderList) return;
+  trails.push({
+    x,
+    y,
+    life: 1,
+    size: 18
+  });
 
-  dom.reminderList.innerHTML = "";
+  if (trails.length > 50) {
+    trails.shift();
+  }
+}
 
-  if (dom.reminderEmpty) {
-    dom.reminderEmpty.classList.toggle(
-      "show",
-      state.reminders.length === 0
+function drawTrail() {
+  trailCtx.clearRect(
+    0,
+    0,
+    innerWidth,
+    innerHeight
+  );
+
+  trails.forEach((point) => {
+
+    trailCtx.beginPath();
+
+    const gradient =
+      trailCtx.createRadialGradient(
+        point.x,
+        point.y,
+        0,
+        point.x,
+        point.y,
+        point.size
+      );
+
+    gradient.addColorStop(
+      0,
+      `rgba(255,255,255,${point.life * .45})`
+    );
+
+    gradient.addColorStop(
+      1,
+      "rgba(255,255,255,0)"
+    );
+
+    trailCtx.fillStyle = gradient;
+
+    trailCtx.arc(
+      point.x,
+      point.y,
+      point.size,
+      0,
+      Math.PI * 2
+    );
+
+    trailCtx.fill();
+
+    point.life -= .035;
+    point.size += .35;
+  });
+
+  trails =
+    trails.filter((point) =>
+      point.life > 0
+    );
+
+  requestAnimationFrame(drawTrail);
+}
+
+document.addEventListener(
+  "pointermove",
+  (event) => {
+    addTrail(
+      event.clientX,
+      event.clientY
     );
   }
+);
 
-  state.reminders.forEach((reminder) => {
-    const card = document.createElement("article");
 
-    card.className = "list-card squishy-soft";
+/* =========================================================
+   LUMA PEEK
+   ========================================================= */
 
-    card.innerHTML = `
-      <button
-        class="home-reminder-check reminder-toggle"
-        type="button"
-        aria-label="完了"
-        data-id="${reminder.id}"
-        style="${
-          reminder.completed
-            ? "background:#24d989;border-color:#24d989;"
-            : ""
-        }"
-      ></button>
+function showPeek() {
+  $("#peekWeather").textContent =
+    currentWeather
+      ? `${Math.round(currentWeather.temperature)}°`
+      : "--°";
 
-      <div class="list-main">
-        <div
-          class="list-title"
-          style="${
-            reminder.completed
-              ? "text-decoration:line-through;opacity:.5;"
-              : ""
-          }"
-        >
-          ${escapeHTML(reminder.title)}
-        </div>
+  const nextReminder =
+    getNextReminder();
 
-        <div class="list-subtitle">
-          ${escapeHTML(reminder.date || "日付なし")}
-          ${reminder.time ? ` ${escapeHTML(reminder.time)}` : ""}
-        </div>
-      </div>
+  $("#peekReminder").textContent =
+    nextReminder
+      ? nextReminder.title
+      : "なし";
 
-      <div class="list-actions">
-        <button
-          class="icon-button reminder-delete squishy"
-          type="button"
-          data-id="${reminder.id}"
-          aria-label="削除"
-        >
-          🗑
-        </button>
-      </div>
-    `;
+  const nextAlarm =
+    alarms
+      .filter((alarm) => alarm.enabled)
+      .sort((a, b) =>
+        a.time.localeCompare(b.time)
+      )[0];
 
-    dom.reminderList.appendChild(card);
-  });
+  $("#peekAlarm").textContent =
+    nextAlarm
+      ? nextAlarm.time
+      : "なし";
 
-  renderHomeReminders();
+  $("#lumaPeek").classList.add("show");
 }
 
-function renderHomeReminders() {
-  if (!dom.homeReminderList) return;
+function hidePeek() {
+  $("#lumaPeek").classList.remove("show");
+}
 
-  const today = todayString();
+function setupPeek() {
+  const clock = $("#clockGlass");
 
-  const todays = state.reminders
-    .filter(
-      (item) =>
-        item.date === today &&
-        !item.completed
-    )
-    .sort((a, b) =>
-      (a.time || "99:99").localeCompare(
-        b.time || "99:99"
-      )
+  clock.addEventListener(
+    "pointerdown",
+    () => {
+      peekTimer =
+        setTimeout(showPeek, 550);
+    }
+  );
+
+  const cancel = () => {
+    clearTimeout(peekTimer);
+
+    setTimeout(
+      hidePeek,
+      900
     );
-
-  dom.homeReminderList.innerHTML = "";
-
-  if (todays.length === 0) {
-    dom.homeReminderList.innerHTML = `
-      <div class="home-empty">
-        今日の予定はありません
-      </div>
-    `;
-
-    return;
-  }
-
-  todays.forEach((item) => {
-    const row = document.createElement("div");
-
-    row.className = "home-reminder-item";
-
-    row.innerHTML = `
-      <button
-        class="home-reminder-check home-reminder-toggle"
-        data-id="${item.id}"
-        type="button"
-        aria-label="完了"
-      ></button>
-
-      <span>${escapeHTML(item.title)}</span>
-
-      <span class="home-reminder-time">
-        ${escapeHTML(item.time || "")}
-      </span>
-    `;
-
-    dom.homeReminderList.appendChild(row);
-  });
-}
-
-function prepareReminderModal() {
-  if (dom.reminderTitleInput) {
-    dom.reminderTitleInput.value = "";
-  }
-
-  if (dom.reminderDateInput) {
-    dom.reminderDateInput.value = todayString();
-  }
-
-  if (dom.reminderTimeInput) {
-    dom.reminderTimeInput.value = "";
-  }
-
-  openModal("reminderModal");
-
-  setTimeout(() => {
-    dom.reminderTitleInput?.focus();
-  }, 100);
-}
-
-function addReminder() {
-  const title =
-    dom.reminderTitleInput?.value.trim() || "";
-
-  const date =
-    dom.reminderDateInput?.value || "";
-
-  const time =
-    dom.reminderTimeInput?.value || "";
-
-  if (!title) {
-    showToast("予定を入力してください");
-    return;
-  }
-
-  state.reminders.push({
-    id: uid("reminder"),
-    title,
-    date,
-    time,
-    completed: false,
-    createdAt: Date.now()
-  });
-
-  saveReminders();
-  renderReminders();
-
-  closeModal("reminderModal");
-
-  showToast("予定を追加しました");
-}
-
-function toggleReminder(id) {
-  const item =
-    state.reminders.find((r) => r.id === id);
-
-  if (!item) return;
-
-  item.completed = !item.completed;
-
-  saveReminders();
-  renderReminders();
-}
-
-function deleteReminder(id) {
-  state.reminders =
-    state.reminders.filter((r) => r.id !== id);
-
-  saveReminders();
-  renderReminders();
-
-  showToast("予定を削除しました");
-}
-
-
-/* ============================================================
-   11. アラーム
-   ============================================================ */
-
-function saveAlarms() {
-  saveJSON("lumaAlarms", state.alarms);
-}
-
-function repeatLabel(value) {
-  const map = {
-    daily: "毎日",
-    weekdays: "平日",
-    weekends: "土日のみ",
-    once: "1回のみ"
   };
 
-  return map[value] || "毎日";
+  clock.addEventListener(
+    "pointerup",
+    cancel
+  );
+
+  clock.addEventListener(
+    "pointercancel",
+    cancel
+  );
 }
+
+
+/* =========================================================
+   CLOCK MORPH
+   ========================================================= */
+
+let clockMode = 0;
+
+$("#clockGlass").addEventListener(
+  "dblclick",
+  () => {
+
+    clockMode =
+      (clockMode + 1) % 3;
+
+    if (clockMode === 0) {
+      $("#clockText").style.fontWeight = "200";
+      $("#clockText").style.fontSize = "";
+    }
+
+    if (clockMode === 1) {
+      $("#clockText").style.fontWeight = "500";
+    }
+
+    if (clockMode === 2) {
+      $("#clockText").style.fontSize =
+        "clamp(55px, 11vw, 130px)";
+    }
+  }
+);
+
+
+/* =========================================================
+   ALARMS
+   ========================================================= */
 
 function renderAlarms() {
-  if (!dom.alarmList) return;
+  const list = $("#alarmList");
 
-  state.alarms.sort((a, b) =>
-    a.time.localeCompare(b.time)
-  );
+  list.innerHTML = "";
 
-  dom.alarmList.innerHTML = "";
+  if (!alarms.length) {
+    list.innerHTML =
+      `<div class="glass list-card">
+         アラームはありません
+       </div>`;
 
-  if (dom.alarmEmpty) {
-    dom.alarmEmpty.classList.toggle(
-      "show",
-      state.alarms.length === 0
-    );
+    return;
   }
 
-  state.alarms.forEach((alarm) => {
-    const card = document.createElement("article");
+  alarms.forEach((alarm) => {
+    const card =
+      document.createElement("div");
 
-    card.className = "list-card squishy-soft";
+    card.className =
+      "glass list-card";
 
     card.innerHTML = `
-      <div class="list-main">
-
-        <div class="list-title">
-          ${escapeHTML(alarm.time)}
+      <div class="grow">
+        <div style="font-size:38px">
+          ${alarm.time}
         </div>
-
-        <div class="list-subtitle">
-          ${
-            alarm.label
-              ? `${escapeHTML(alarm.label)} ・ `
-              : ""
-          }
-          ${repeatLabel(alarm.repeat)}
-        </div>
-
-      </div>
-
-      <div class="list-actions">
-
-        <label class="switch">
-          <input
-            class="alarm-toggle"
-            data-id="${alarm.id}"
-            type="checkbox"
-            ${alarm.enabled ? "checked" : ""}
-          >
-          <span class="switch-slider"></span>
-        </label>
-
-        <button
-          class="icon-button alarm-delete squishy"
-          data-id="${alarm.id}"
-          type="button"
-          aria-label="削除"
-        >
-          🗑
-        </button>
-
-      </div>
-    `;
-
-    dom.alarmList.appendChild(card);
-  });
-}
-
-function prepareAlarmModal() {
-  if (dom.alarmTimeInput) {
-    dom.alarmTimeInput.value = "07:00";
-  }
-
-  if (dom.alarmLabelInput) {
-    dom.alarmLabelInput.value = "";
-  }
-
-  if (dom.alarmRepeatInput) {
-    dom.alarmRepeatInput.value = "daily";
-  }
-
-  openModal("alarmModal");
-}
-
-function addAlarm() {
-  const time =
-    dom.alarmTimeInput?.value || "";
-
-  if (!time) {
-    showToast("時刻を設定してください");
-    return;
-  }
-
-  const label =
-    dom.alarmLabelInput?.value.trim() || "";
-
-  const repeat =
-    dom.alarmRepeatInput?.value || "daily";
-
-  state.alarms.push({
-    id: uid("alarm"),
-    time,
-    label,
-    repeat,
-    enabled: true,
-    lastTriggeredKey: null
-  });
-
-  saveAlarms();
-  renderAlarms();
-
-  closeModal("alarmModal");
-
-  showToast("アラームを追加しました");
-}
-
-function alarmMatchesDay(alarm, date) {
-  const day = date.getDay();
-
-  if (alarm.repeat === "daily") {
-    return true;
-  }
-
-  if (alarm.repeat === "weekdays") {
-    return day >= 1 && day <= 5;
-  }
-
-  if (alarm.repeat === "weekends") {
-    return day === 0 || day === 6;
-  }
-
-  if (alarm.repeat === "once") {
-    return true;
-  }
-
-  return true;
-}
-
-function checkAlarms(now) {
-  if (state.ring.active) return;
-
-  const currentTime =
-    `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-
-  const triggerKey =
-    `${todayString(now)}-${currentTime}`;
-
-  for (const alarm of state.alarms) {
-    if (!alarm.enabled) continue;
-
-    if (alarm.time !== currentTime) continue;
-
-    if (!alarmMatchesDay(alarm, now)) continue;
-
-    if (alarm.lastTriggeredKey === triggerKey) {
-      continue;
-    }
-
-    alarm.lastTriggeredKey = triggerKey;
-
-    if (alarm.repeat === "once") {
-      alarm.enabled = false;
-    }
-
-    saveAlarms();
-    renderAlarms();
-
-    startRing(
-      "alarm",
-      alarm.label || "アラーム",
-      `${alarm.time} になりました`
-    );
-
-    break;
-  }
-}
-
-
-/* ============================================================
-   12. タイマー
-   ============================================================ */
-
-function readTimerInputMs() {
-  const hours =
-    clamp(
-      Number(dom.timerHours?.value || 0),
-      0,
-      23
-    );
-
-  const minutes =
-    clamp(
-      Number(dom.timerMinutes?.value || 0),
-      0,
-      59
-    );
-
-  const seconds =
-    clamp(
-      Number(dom.timerSecondsInput?.value || 0),
-      0,
-      59
-    );
-
-  return (
-    hours * 3600 +
-    minutes * 60 +
-    seconds
-  ) * 1000;
-}
-
-function setTimerInputs(totalSeconds) {
-  const total = Math.max(
-    0,
-    Math.floor(totalSeconds)
-  );
-
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-
-  if (dom.timerHours) {
-    dom.timerHours.value = h;
-  }
-
-  if (dom.timerMinutes) {
-    dom.timerMinutes.value = m;
-  }
-
-  if (dom.timerSecondsInput) {
-    dom.timerSecondsInput.value = s;
-  }
-
-  if (!state.timer.running) {
-    state.timer.remainingMs = total * 1000;
-    updateTimerDisplay();
-  }
-}
-
-function updateTimerDisplay() {
-  let ms = state.timer.remainingMs;
-
-  if (state.timer.running) {
-    ms = Math.max(
-      0,
-      state.timer.endAt - Date.now()
-    );
-
-    state.timer.remainingMs = ms;
-  }
-
-  const seconds = Math.ceil(ms / 1000);
-
-  if (dom.timerDisplay) {
-    dom.timerDisplay.textContent =
-      formatDuration(seconds);
-  }
-
-  updateIsland();
-}
-
-function startTimer() {
-  if (state.timer.running) {
-    return;
-  }
-
-  let ms = state.timer.remainingMs;
-
-  if (!state.timer.paused || ms <= 0) {
-    ms = readTimerInputMs();
-  }
-
-  if (ms <= 0) {
-    showToast("タイマー時間を設定してください");
-    return;
-  }
-
-  state.timer.originalMs =
-    state.timer.originalMs > 0 &&
-    state.timer.paused
-      ? state.timer.originalMs
-      : ms;
-
-  state.timer.remainingMs = ms;
-  state.timer.endAt = Date.now() + ms;
-  state.timer.running = true;
-  state.timer.paused = false;
-
-  clearInterval(state.timer.interval);
-
-  state.timer.interval =
-    setInterval(timerTick, 250);
-
-  timerTick();
-}
-
-function timerTick() {
-  if (!state.timer.running) return;
-
-  const remaining =
-    Math.max(
-      0,
-      state.timer.endAt - Date.now()
-    );
-
-  state.timer.remainingMs = remaining;
-
-  updateTimerDisplay();
-
-  if (remaining <= 0) {
-    clearInterval(state.timer.interval);
-
-    state.timer.interval = null;
-    state.timer.running = false;
-    state.timer.paused = false;
-    state.timer.remainingMs = 0;
-
-    updateTimerDisplay();
-
-    startRing(
-      "timer",
-      "タイマー",
-      "時間になりました"
-    );
-  }
-}
-
-function pauseTimer() {
-  if (!state.timer.running) return;
-
-  state.timer.remainingMs =
-    Math.max(
-      0,
-      state.timer.endAt - Date.now()
-    );
-
-  state.timer.running = false;
-  state.timer.paused = true;
-
-  clearInterval(state.timer.interval);
-  state.timer.interval = null;
-
-  updateTimerDisplay();
-}
-
-function resetTimer() {
-  clearInterval(state.timer.interval);
-
-  state.timer.interval = null;
-  state.timer.running = false;
-  state.timer.paused = false;
-
-  const inputMs = readTimerInputMs();
-
-  state.timer.remainingMs = inputMs;
-  state.timer.originalMs = inputMs;
-
-  updateTimerDisplay();
-}
-
-
-/* ============================================================
-   13. ストップウォッチ
-   ============================================================ */
-
-function stopwatchElapsed() {
-  if (!state.stopwatch.running) {
-    return state.stopwatch.elapsedBeforeStart;
-  }
-
-  return (
-    state.stopwatch.elapsedBeforeStart +
-    (performance.now() - state.stopwatch.startedAt)
-  );
-}
-
-function formatStopwatch(ms) {
-  const totalTenths =
-    Math.floor(ms / 100);
-
-  const tenths =
-    totalTenths % 10;
-
-  const totalSeconds =
-    Math.floor(totalTenths / 10);
-
-  const seconds =
-    totalSeconds % 60;
-
-  const minutes =
-    Math.floor(totalSeconds / 60);
-
-  return (
-    `${pad2(minutes)}:` +
-    `${pad2(seconds)}.` +
-    `${tenths}`
-  );
-}
-
-function updateStopwatchDisplay() {
-  if (!dom.stopwatchDisplay) return;
-
-  dom.stopwatchDisplay.textContent =
-    formatStopwatch(stopwatchElapsed());
-}
-
-function toggleStopwatch() {
-  const button = $("#stopwatchStart");
-
-  if (!state.stopwatch.running) {
-    state.stopwatch.startedAt =
-      performance.now();
-
-    state.stopwatch.running = true;
-
-    state.stopwatch.interval =
-      setInterval(
-        updateStopwatchDisplay,
-        50
-      );
-
-    if (button) {
-      button.textContent = "一時停止";
-    }
-  } else {
-    state.stopwatch.elapsedBeforeStart =
-      stopwatchElapsed();
-
-    state.stopwatch.running = false;
-
-    clearInterval(
-      state.stopwatch.interval
-    );
-
-    state.stopwatch.interval = null;
-
-    if (button) {
-      button.textContent = "再開";
-    }
-
-    updateStopwatchDisplay();
-  }
-}
-
-function addLap() {
-  if (
-    !state.stopwatch.running &&
-    state.stopwatch.elapsedBeforeStart <= 0
-  ) {
-    return;
-  }
-
-  state.stopwatch.laps.unshift(
-    stopwatchElapsed()
-  );
-
-  renderLaps();
-}
-
-function renderLaps() {
-  if (!dom.lapList) return;
-
-  dom.lapList.innerHTML = "";
-
-  state.stopwatch.laps.forEach(
-    (lap, index) => {
-      const row =
-        document.createElement("div");
-
-      row.className = "lap-row";
-
-      row.innerHTML = `
-        <span>
-          ラップ ${
-            state.stopwatch.laps.length - index
-          }
-        </span>
-
-        <strong>
-          ${formatStopwatch(lap)}
-        </strong>
-      `;
-
-      dom.lapList.appendChild(row);
-    }
-  );
-}
-
-function resetStopwatch() {
-  clearInterval(
-    state.stopwatch.interval
-  );
-
-  state.stopwatch.interval = null;
-  state.stopwatch.running = false;
-  state.stopwatch.startedAt = 0;
-  state.stopwatch.elapsedBeforeStart = 0;
-  state.stopwatch.laps = [];
-
-  const button = $("#stopwatchStart");
-
-  if (button) {
-    button.textContent = "スタート";
-  }
-
-  updateStopwatchDisplay();
-  renderLaps();
-}
-
-
-/* ============================================================
-   14. 鳴動
-   ============================================================ */
-
-function createAudioContext() {
-  const AudioContextClass =
-    window.AudioContext ||
-    window.webkitAudioContext;
-
-  if (!AudioContextClass) {
-    return null;
-  }
-
-  return new AudioContextClass();
-}
-
-function startRing(type, title, subtitle) {
-  if (state.ring.active) {
-    stopRing();
-  }
-
-  state.ring.active = true;
-  state.ring.type = type;
-
-  if (dom.ringIcon) {
-    dom.ringIcon.textContent =
-      type === "timer" ? "⏱️" : "⏰";
-  }
-
-  if (dom.ringTitle) {
-    dom.ringTitle.textContent = title;
-  }
-
-  if (dom.ringSubtitle) {
-    dom.ringSubtitle.textContent =
-      subtitle;
-  }
-
-  dom.ringOverlay?.classList.add("show");
-
-  try {
-    const context =
-      createAudioContext();
-
-    if (!context) return;
-
-    state.ring.audioContext =
-      context;
-
-    const oscillator =
-      context.createOscillator();
-
-    const gain =
-      context.createGain();
-
-    oscillator.type = "sine";
-    oscillator.frequency.value = 880;
-
-    gain.gain.value = 0;
-
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-
-    oscillator.start();
-
-    state.ring.oscillator =
-      oscillator;
-
-    state.ring.gain =
-      gain;
-
-    let high = false;
-
-    const pulse = () => {
-      high = !high;
-
-      const now =
-        context.currentTime;
-
-      gain.gain.cancelScheduledValues(now);
-
-      gain.gain.setValueAtTime(
-        gain.gain.value,
-        now
-      );
-
-      gain.gain.linearRampToValueAtTime(
-        high ? 0.12 : 0,
-        now + 0.08
-      );
-
-      oscillator.frequency.setValueAtTime(
-        high ? 880 : 660,
-        now
-      );
-    };
-
-    pulse();
-
-    state.ring.pulseInterval =
-      setInterval(pulse, 430);
-  } catch (error) {
-    console.warn(
-      "Luma: alarm audio unavailable",
-      error
-    );
-  }
-}
-
-function stopRing() {
-  state.ring.active = false;
-
-  dom.ringOverlay?.classList.remove(
-    "show"
-  );
-
-  clearInterval(
-    state.ring.pulseInterval
-  );
-
-  state.ring.pulseInterval = null;
-
-  try {
-    state.ring.oscillator?.stop();
-  } catch (_) {}
-
-  try {
-    state.ring.audioContext?.close();
-  } catch (_) {}
-
-  state.ring.oscillator = null;
-  state.ring.audioContext = null;
-  state.ring.gain = null;
-}
-
-
-/* ============================================================
-   15. 天気
-   ============================================================ */
-
-function weatherInfo(code, isDay = 1) {
-  const night = Number(isDay) === 0;
-
-  if (code === 0) {
-    return {
-      icon: night ? "🌙" : "☀️",
-      text: "快晴"
-    };
-  }
-
-  if ([1, 2].includes(code)) {
-    return {
-      icon: night ? "☁️" : "🌤️",
-      text: "晴れ時々くもり"
-    };
-  }
-
-  if (code === 3) {
-    return {
-      icon: "☁️",
-      text: "くもり"
-    };
-  }
-
-  if ([45, 48].includes(code)) {
-    return {
-      icon: "🌫️",
-      text: "霧"
-    };
-  }
-
-  if ([51, 53, 55, 56, 57].includes(code)) {
-    return {
-      icon: "🌦️",
-      text: "霧雨"
-    };
-  }
-
-  if ([61, 63, 65, 66, 67].includes(code)) {
-    return {
-      icon: "🌧️",
-      text: "雨"
-    };
-  }
-
-  if ([71, 73, 75, 77].includes(code)) {
-    return {
-      icon: "🌨️",
-      text: "雪"
-    };
-  }
-
-  if ([80, 81, 82].includes(code)) {
-    return {
-      icon: "🌦️",
-      text: "にわか雨"
-    };
-  }
-
-  if ([85, 86].includes(code)) {
-    return {
-      icon: "🌨️",
-      text: "にわか雪"
-    };
-  }
-
-  if ([95, 96, 99].includes(code)) {
-    return {
-      icon: "⛈️",
-      text: "雷雨"
-    };
-  }
-
-  return {
-    icon: "🌤️",
-    text: "天気"
-  };
-}
-
-async function searchWeatherCities() {
-  const raw =
-    dom.weatherSearchInput?.value.trim() || "";
-
-  if (!raw) {
-    dom.weatherSearchStatus.textContent =
-      "都市名を入力してください";
-
-    return;
-  }
-
-  dom.weatherSearchStatus.textContent =
-    "検索しています…";
-
-  dom.weatherSearchResults.innerHTML = "";
-
-  let queries = [raw];
-
-  const stripped =
-    raw.replace(
-      /(市|区|町|村)$/u,
-      ""
-    );
-
-  if (
-    stripped &&
-    stripped !== raw
-  ) {
-    queries.push(stripped);
-  }
-
-  let results = [];
-
-  for (const query of queries) {
-    try {
-      const url =
-        "https://geocoding-api.open-meteo.com/v1/search" +
-        `?name=${encodeURIComponent(query)}` +
-        "&count=10" +
-        "&language=ja" +
-        "&format=json" +
-        "&countryCode=JP";
-
-      const response =
-        await fetch(url);
-
-      if (!response.ok) {
-        continue;
-      }
-
-      const json =
-        await response.json();
-
-      if (
-        Array.isArray(json.results) &&
-        json.results.length
-      ) {
-        results = json.results;
-        break;
-      }
-    } catch (error) {
-      console.warn(
-        "Luma: weather search failed",
-        error
-      );
-    }
-  }
-
-  if (!results.length) {
-    dom.weatherSearchStatus.textContent =
-      "見つかりませんでした。別の地名で検索してください。";
-
-    return;
-  }
-
-  dom.weatherSearchStatus.textContent =
-    `${results.length}件見つかりました`;
-
-  results.forEach((place) => {
-    const button =
-      document.createElement("button");
-
-    button.type = "button";
-    button.className =
-      "weather-result squishy";
-
-    const sub = [
-      place.admin1,
-      place.admin2,
-      place.country
-    ]
-      .filter(Boolean)
-      .join(" / ");
-
-    button.innerHTML = `
-      <div>
-        <strong>
-          ${escapeHTML(place.name)}
-        </strong>
-
         <small>
-          ${escapeHTML(sub)}
+          ${escapeHTML(alarm.name || "アラーム")}
         </small>
       </div>
 
-      <span>›</span>
+      <input
+        type="checkbox"
+        ${alarm.enabled ? "checked" : ""}
+      >
+
+      <button>削除</button>
     `;
 
-    button.addEventListener(
-      "click",
-      async () => {
-        state.settings.weatherLocation = {
-          name: place.name,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          timezone:
-            place.timezone || "Asia/Tokyo",
-          admin1: place.admin1 || ""
-        };
+    const toggle =
+      card.querySelector("input");
 
-        saveSettings();
+    toggle.addEventListener(
+      "change",
+      () => {
+        alarm.enabled =
+          toggle.checked;
 
-        closeModal("weatherModal");
-
-        await fetchWeather();
+        saveAlarms();
       }
     );
 
-    dom.weatherSearchResults.appendChild(
-      button
+    card.querySelector("button")
+      .addEventListener(
+        "click",
+        () => {
+
+          alarms =
+            alarms.filter(
+              (item) =>
+                item.id !== alarm.id
+            );
+
+          saveAlarms();
+          renderAlarms();
+        }
+      );
+
+    list.appendChild(card);
+  });
+}
+
+function checkAlarms(now) {
+  const time =
+    `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+
+  alarms.forEach((alarm) => {
+
+    if (
+      alarm.enabled &&
+      alarm.time === time &&
+      alarm.lastTriggered !==
+        now.toDateString()
+    ) {
+      alarm.lastTriggered =
+        now.toDateString();
+
+      saveAlarms();
+
+      ring(
+        alarm.name || "アラーム"
+      );
+    }
+  });
+}
+
+function ring(name) {
+  safe(() => {
+    navigator.vibrate?.(
+      [300,150,300,150,500]
     );
   });
 
-  installSquishForNewElements(
-    dom.weatherSearchResults
+  alert(`⏰ ${name}`);
+}
+
+$("#addAlarmButton")
+  .addEventListener(
+    "click",
+    () => {
+      $("#alarmDialog").showModal();
+    }
+  );
+
+$("#saveAlarmButton")
+  .addEventListener(
+    "click",
+    (event) => {
+
+      event.preventDefault();
+
+      const time =
+        $("#alarmTimeInput").value;
+
+      if (!time) return;
+
+      alarms.push({
+        id: Date.now(),
+        time,
+        name:
+          $("#alarmNameInput").value.trim(),
+        enabled: true,
+        lastTriggered: null
+      });
+
+      saveAlarms();
+      renderAlarms();
+
+      $("#alarmDialog").close();
+
+      $("#alarmNameInput").value = "";
+    }
+  );
+
+
+/* =========================================================
+   TIMER
+   ========================================================= */
+
+function formatDuration(total) {
+  total =
+    Math.max(0, Math.floor(total));
+
+  const h =
+    Math.floor(total / 3600);
+
+  const m =
+    Math.floor((total % 3600) / 60);
+
+  const s =
+    total % 60;
+
+  if (h > 0) {
+    return (
+      `${String(h).padStart(2,"0")}:` +
+      `${String(m).padStart(2,"0")}:` +
+      `${String(s).padStart(2,"0")}`
+    );
+  }
+
+  return (
+    `${String(m).padStart(2,"0")}:` +
+    `${String(s).padStart(2,"0")}`
   );
 }
 
-async function fetchWeather() {
-  const location =
-    state.settings.weatherLocation;
+function renderTimer() {
+  const text =
+    formatDuration(timerRemaining);
 
-  if (!location) {
-    renderWeather();
-    return;
+  $("#timerDisplay").textContent = text;
+  $("#miniTimerText").textContent = text;
+
+  $("#timerMiniCard")
+    .classList.toggle(
+      "hidden",
+      !timerRunning
+    );
+
+  if (timerRunning) {
+    $("#islandLabel").textContent =
+      "タイマー";
+
+    $("#islandValue").textContent =
+      text;
+
+    $("#islandIcon").textContent =
+      "◴";
+  }
+}
+
+function startTimer() {
+  if (
+    timerRunning ||
+    timerRemaining <= 0
+  ) return;
+
+  timerRunning = true;
+
+  renderTimer();
+
+  timerInterval =
+    setInterval(() => {
+
+      timerRemaining--;
+
+      renderTimer();
+
+      if (timerRemaining <= 0) {
+        clearInterval(timerInterval);
+
+        timerRunning = false;
+
+        renderTimer();
+
+        ring("タイマー");
+      }
+    }, 1000);
+}
+
+function pauseTimer() {
+  clearInterval(timerInterval);
+
+  timerRunning = false;
+
+  renderTimer();
+}
+
+function resetTimer() {
+  pauseTimer();
+
+  timerRemaining =
+    timerSeconds;
+
+  renderTimer();
+}
+
+$$(".quick-presets button")
+  .forEach((button) => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        const minutes =
+          Number(button.dataset.minutes);
+
+        pauseTimer();
+
+        timerSeconds =
+          minutes * 60;
+
+        timerRemaining =
+          timerSeconds;
+
+        renderTimer();
+      }
+    );
+  });
+
+$("#timerStart")
+  .addEventListener(
+    "click",
+    startTimer
+  );
+
+$("#timerPause")
+  .addEventListener(
+    "click",
+    pauseTimer
+  );
+
+$("#timerReset")
+  .addEventListener(
+    "click",
+    resetTimer
+  );
+
+
+/* Quick Timer:
+   ホームのタイマーボタン長押し */
+
+let quickTimerPress = null;
+
+$("#timerDockButton")
+  .addEventListener(
+    "pointerdown",
+    () => {
+
+      quickTimerPress =
+        setTimeout(() => {
+
+          const choice =
+            prompt(
+              "Quick Timer\n5 / 10 / 15 / 30 / 60 分",
+              "10"
+            );
+
+          const minutes =
+            Number(choice);
+
+          if (
+            [5,10,15,30,60]
+              .includes(minutes)
+          ) {
+            timerSeconds =
+              minutes * 60;
+
+            timerRemaining =
+              timerSeconds;
+
+            startTimer();
+
+            openPage("homePage");
+          }
+        }, 600);
+    }
+  );
+
+$("#timerDockButton")
+  .addEventListener(
+    "pointerup",
+    () => {
+      clearTimeout(quickTimerPress);
+    }
+  );
+
+
+/* =========================================================
+   STOPWATCH
+   ========================================================= */
+
+function renderStopwatch() {
+  const total =
+    stopwatchElapsed;
+
+  const minutes =
+    Math.floor(total / 60000);
+
+  const seconds =
+    Math.floor(
+      (total % 60000) / 1000
+    );
+
+  const centiseconds =
+    Math.floor(
+      (total % 1000) / 10
+    );
+
+  $("#stopwatchDisplay")
+    .textContent =
+      `${String(minutes).padStart(2,"0")}:` +
+      `${String(seconds).padStart(2,"0")}.` +
+      `${String(centiseconds).padStart(2,"0")}`;
+}
+
+$("#stopwatchStart")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (stopwatchInterval) {
+        clearInterval(stopwatchInterval);
+
+        stopwatchInterval = null;
+
+        stopwatchElapsed =
+          performance.now() -
+          stopwatchStartTime;
+
+        $("#stopwatchStart")
+          .textContent = "開始";
+
+        return;
+      }
+
+      stopwatchStartTime =
+        performance.now() -
+        stopwatchElapsed;
+
+      stopwatchInterval =
+        setInterval(() => {
+
+          stopwatchElapsed =
+            performance.now() -
+            stopwatchStartTime;
+
+          renderStopwatch();
+
+        }, 30);
+
+      $("#stopwatchStart")
+        .textContent = "停止";
+    }
+  );
+
+$("#stopwatchReset")
+  .addEventListener(
+    "click",
+    () => {
+
+      clearInterval(stopwatchInterval);
+
+      stopwatchInterval = null;
+      stopwatchElapsed = 0;
+
+      $("#stopwatchStart")
+        .textContent = "開始";
+
+      $("#lapList").innerHTML = "";
+
+      renderStopwatch();
+    }
+  );
+
+$("#stopwatchLap")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (!stopwatchInterval) return;
+
+      const div =
+        document.createElement("div");
+
+      div.textContent =
+        $("#stopwatchDisplay").textContent;
+
+      $("#lapList")
+        .prepend(div);
+    }
+  );
+
+
+/* =========================================================
+   WORLD CLOCK
+   ========================================================= */
+
+function zoneTime(zone) {
+  return new Intl.DateTimeFormat(
+    "ja-JP",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: zone
+    }
+  ).format(new Date());
+}
+
+function updateWorldClocks() {
+  $("#tokyoTime").textContent =
+    zoneTime("Asia/Tokyo");
+
+  $("#londonTime").textContent =
+    zoneTime("Europe/London");
+
+  $("#newYorkTime").textContent =
+    zoneTime("America/New_York");
+
+  $("#parisTime").textContent =
+    zoneTime("Europe/Paris");
+}
+
+
+/* =========================================================
+   REMINDERS
+   ========================================================= */
+
+function getNextReminder() {
+  const now = Date.now();
+
+  return reminders
+    .filter((item) => !item.done)
+    .map((item) => ({
+      ...item,
+      timestamp:
+        new Date(
+          `${item.date}T${item.time || "00:00"}`
+        ).getTime()
+    }))
+    .filter((item) =>
+      item.timestamp >= now
+    )
+    .sort((a,b) =>
+      a.timestamp - b.timestamp
+    )[0];
+}
+
+function renderReminders() {
+  const list =
+    $("#reminderList");
+
+  list.innerHTML = "";
+
+  if (!reminders.length) {
+    list.innerHTML =
+      `<div class="glass list-card">
+         リマインダーはありません
+       </div>`;
   }
 
-  if (state.weather.loading) {
-    return;
-  }
+  reminders
+    .sort((a,b) =>
+      `${a.date}${a.time}`
+        .localeCompare(
+          `${b.date}${b.time}`
+        )
+    )
+    .forEach((item) => {
 
-  state.weather.loading = true;
+      const card =
+        document.createElement("div");
 
-  if (dom.weatherUpdated) {
-    dom.weatherUpdated.textContent =
-      "天気を取得しています…";
-  }
+      card.className =
+        "glass list-card";
 
-  try {
-    const params =
-      new URLSearchParams({
-        latitude:
-          String(location.latitude),
+      card.innerHTML = `
+        <input
+          type="checkbox"
+          ${item.done ? "checked" : ""}
+        >
 
-        longitude:
-          String(location.longitude),
+        <div class="grow">
+          <strong>
+            ${escapeHTML(item.title)}
+          </strong>
 
-        current:
-          [
-            "temperature_2m",
-            "relative_humidity_2m",
-            "weather_code",
-            "wind_speed_10m",
-            "is_day"
-          ].join(","),
+          <div>
+            <small>
+              ${item.date}
+              ${item.time || ""}
+            </small>
+          </div>
+        </div>
 
-        daily:
-          [
-            "weather_code",
-            "temperature_2m_max",
-            "temperature_2m_min"
-          ].join(","),
+        <button>削除</button>
+      `;
 
-        timezone:
-          location.timezone ||
-          "Asia/Tokyo",
+      card.querySelector("input")
+        .addEventListener(
+          "change",
+          (event) => {
 
-        forecast_days: "1"
+            item.done =
+              event.target.checked;
+
+            saveReminders();
+            updateHomeReminder();
+          }
+        );
+
+      card.querySelector("button")
+        .addEventListener(
+          "click",
+          () => {
+
+            reminders =
+              reminders.filter(
+                (r) =>
+                  r.id !== item.id
+              );
+
+            saveReminders();
+            renderReminders();
+            updateHomeReminder();
+          }
+        );
+
+      list.appendChild(card);
+    });
+
+  updateHomeReminder();
+}
+
+function updateHomeReminder() {
+  const next =
+    getNextReminder();
+
+  $("#nextReminderText")
+    .textContent =
+      next
+        ? next.title
+        : "予定はありません";
+}
+
+$("#addReminderButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      $("#reminderDialog")
+        .showModal();
+    }
+  );
+
+$("#saveReminderButton")
+  .addEventListener(
+    "click",
+    (event) => {
+
+      event.preventDefault();
+
+      const title =
+        $("#reminderTitleInput")
+          .value.trim();
+
+      const date =
+        $("#reminderDateInput")
+          .value;
+
+      if (!title || !date) {
+        return;
+      }
+
+      reminders.push({
+        id: Date.now(),
+        title,
+        date,
+        time:
+          $("#reminderTimeInput")
+            .value,
+        done: false
       });
 
+      saveReminders();
+      renderReminders();
+
+      $("#reminderDialog").close();
+
+      $("#reminderTitleInput")
+        .value = "";
+
+      $("#reminderDateInput")
+        .value = "";
+
+      $("#reminderTimeInput")
+        .value = "";
+    }
+  );
+
+
+/* =========================================================
+   WEATHER 2
+   Open-Meteo
+   ========================================================= */
+
+function weatherIcon(code) {
+  if (code === 0) return "☀︎";
+  if (code <= 3) return "☁︎";
+  if (code <= 48) return "≋";
+  if (code <= 67) return "☂";
+  if (code <= 77) return "❄︎";
+  if (code <= 82) return "☂";
+  if (code <= 86) return "❄︎";
+
+  return "⚡";
+}
+
+function weatherText(code) {
+  if (code === 0) return "晴れ";
+  if (code <= 3) return "くもり";
+  if (code <= 48) return "霧";
+  if (code <= 67) return "雨";
+  if (code <= 77) return "雪";
+  if (code <= 82) return "にわか雨";
+  if (code <= 86) return "雪";
+
+  return "雷雨";
+}
+
+async function searchWeather(city) {
+  return safeAsync(async () => {
+
+    const geoURL =
+      "https://geocoding-api.open-meteo.com/v1/search" +
+      `?name=${encodeURIComponent(city)}` +
+      "&count=5" +
+      "&language=ja" +
+      "&format=json";
+
+    const geoResponse =
+      await fetch(geoURL);
+
+    const geo =
+      await geoResponse.json();
+
+    if (!geo.results?.length) {
+      alert("都市が見つかりませんでした。");
+      return;
+    }
+
+    const place =
+      geo.results[0];
+
     const url =
-      `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
+      "https://api.open-meteo.com/v1/forecast" +
+      `?latitude=${place.latitude}` +
+      `&longitude=${place.longitude}` +
+      "&current=temperature_2m,weather_code" +
+      "&hourly=temperature_2m,precipitation_probability,weather_code" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+      "&timezone=auto" +
+      "&forecast_days=7";
 
     const response =
       await fetch(url);
 
-    if (!response.ok) {
-      throw new Error(
-        `Weather HTTP ${response.status}`
-      );
-    }
-
-    const json =
+    const data =
       await response.json();
 
-    const current =
-      json.current || {};
-
-    const daily =
-      json.daily || {};
-
-    state.weather.data = {
-      city: location.name,
+    currentWeather = {
+      city:
+        place.name,
       temperature:
-        current.temperature_2m,
-      humidity:
-        current.relative_humidity_2m,
-      weatherCode:
-        current.weather_code,
-      wind:
-        current.wind_speed_10m,
-      isDay:
-        current.is_day,
-      high:
-        daily.temperature_2m_max?.[0],
-      low:
-        daily.temperature_2m_min?.[0],
-      updatedAt:
-        new Date()
+        data.current.temperature_2m,
+      code:
+        data.current.weather_code
     };
 
-    renderWeather();
-  } catch (error) {
-    console.error(
-      "Luma: weather fetch failed",
-      error
+    localStorage.setItem(
+      "luma2_weather_city",
+      place.name
     );
 
-    if (dom.weatherUpdated) {
-      dom.weatherUpdated.textContent =
-        "天気を取得できませんでした";
-    }
-
-    showToast(
-      "天気を取得できませんでした"
+    renderWeather(
+      data,
+      place.name
     );
-  } finally {
-    state.weather.loading = false;
-  }
+  });
 }
 
-function renderWeather() {
-  const location =
-    state.settings.weatherLocation;
-
-  const data =
-    state.weather.data;
-
-  if (!location) {
-    if (dom.weatherCity) {
-      dom.weatherCity.textContent =
-        "都市を設定してください";
-    }
-
-    if (dom.homeWeatherCity) {
-      dom.homeWeatherCity.textContent =
-        "天気を設定";
-    }
-
-    if (dom.homeTemperature) {
-      dom.homeTemperature.textContent =
-        "--°";
-    }
-
-    return;
-  }
-
-  if (!data) {
-    if (dom.weatherCity) {
-      dom.weatherCity.textContent =
-        location.name;
-    }
-
-    if (dom.homeWeatherCity) {
-      dom.homeWeatherCity.textContent =
-        location.name;
-    }
-
-    return;
-  }
-
-  const info =
-    weatherInfo(
-      Number(data.weatherCode),
-      data.isDay
+function renderWeather(data, city) {
+  const temp =
+    Math.round(
+      data.current.temperature_2m
     );
 
-  if (dom.weatherIcon) {
-    dom.weatherIcon.textContent =
-      info.icon;
-  }
+  const code =
+    data.current.weather_code;
 
-  if (dom.weatherTemperature) {
-    dom.weatherTemperature.textContent =
-      Number.isFinite(
-        Number(data.temperature)
-      )
-        ? Math.round(data.temperature)
-        : "--";
-  }
+  const icon =
+    weatherIcon(code);
 
-  if (dom.weatherCity) {
-    dom.weatherCity.textContent =
-      data.city;
-  }
+  $("#weatherIcon").textContent =
+    icon;
 
-  if (dom.weatherDescription) {
-    dom.weatherDescription.textContent =
-      info.text;
-  }
+  $("#weatherTemp").textContent =
+    `${temp}°`;
 
-  if (dom.weatherHigh) {
-    dom.weatherHigh.textContent =
-      Number.isFinite(Number(data.high))
-        ? `${Math.round(data.high)}°`
-        : "--°";
-  }
+  $("#weatherDescription")
+    .textContent =
+      weatherText(code);
 
-  if (dom.weatherLow) {
-    dom.weatherLow.textContent =
-      Number.isFinite(Number(data.low))
-        ? `${Math.round(data.low)}°`
-        : "--°";
-  }
+  $("#weatherCity").textContent =
+    city;
 
-  if (dom.weatherHumidity) {
-    dom.weatherHumidity.textContent =
-      Number.isFinite(
-        Number(data.humidity)
-      )
-        ? `${Math.round(data.humidity)}%`
-        : "--%";
-  }
+  $("#weatherPageIcon")
+    .textContent =
+      icon;
 
-  if (dom.weatherWind) {
-    dom.weatherWind.textContent =
-      Number.isFinite(Number(data.wind))
-        ? `${Math.round(data.wind)} km/h`
-        : "-- km/h";
-  }
+  $("#weatherPageTemp")
+    .textContent =
+      `${temp}°`;
 
-  if (dom.weatherUpdated) {
-    const time =
-      new Intl.DateTimeFormat(
-        "ja-JP",
-        {
-          hour: "2-digit",
-          minute: "2-digit"
-        }
-      ).format(data.updatedAt);
+  $("#weatherPageCity")
+    .textContent =
+      city;
 
-    dom.weatherUpdated.textContent =
-      `最終更新 ${time}`;
-  }
+  const hourly =
+    $("#hourlyWeather");
 
-  if (dom.homeWeatherIcon) {
-    dom.homeWeatherIcon.textContent =
-      info.icon;
-  }
+  hourly.innerHTML = "";
 
-  if (dom.homeTemperature) {
-    dom.homeTemperature.textContent =
-      Number.isFinite(
-        Number(data.temperature)
-      )
-        ? `${Math.round(
-            data.temperature
-          )}°`
-        : "--°";
-  }
+  const now =
+    new Date();
 
-  if (dom.homeWeatherCity) {
-    dom.homeWeatherCity.textContent =
-      data.city;
-  }
-}
-
-
-/* ============================================================
-   16. IndexedDB
-   ============================================================ */
-
-function openLumaDB() {
-  return new Promise(
-    (resolve, reject) => {
-      if (!("indexedDB" in window)) {
-        reject(
-          new Error(
-            "IndexedDB unavailable"
-          )
-        );
-
-        return;
-      }
-
-      const request =
-        indexedDB.open(
-          "LumaOSDatabase",
-          2
-        );
-
-      request.onupgradeneeded =
-        (event) => {
-          const db =
-            event.target.result;
-
-          if (
-            !db.objectStoreNames.contains(
-              "assets"
-            )
-          ) {
-            db.createObjectStore(
-              "assets"
-            );
-          }
-
-          if (
-            !db.objectStoreNames.contains(
-              "tracks"
-            )
-          ) {
-            db.createObjectStore(
-              "tracks",
-              {
-                keyPath: "id"
-              }
-            );
-          }
-        };
-
-      request.onsuccess = () => {
-        state.db =
-          request.result;
-
-        resolve(request.result);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    }
-  );
-}
-
-function dbPut(
-  storeName,
-  value,
-  key = undefined
-) {
-  return new Promise(
-    (resolve, reject) => {
-      if (!state.db) {
-        reject(
-          new Error(
-            "Database not ready"
-          )
-        );
-
-        return;
-      }
-
-      const tx =
-        state.db.transaction(
-          storeName,
-          "readwrite"
-        );
-
-      const store =
-        tx.objectStore(storeName);
-
-      const request =
-        key === undefined
-          ? store.put(value)
-          : store.put(value, key);
-
-      request.onsuccess =
-        () => resolve();
-
-      request.onerror =
-        () => reject(request.error);
-    }
-  );
-}
-
-function dbGet(storeName, key) {
-  return new Promise(
-    (resolve, reject) => {
-      if (!state.db) {
-        resolve(undefined);
-        return;
-      }
-
-      const tx =
-        state.db.transaction(
-          storeName,
-          "readonly"
-        );
-
-      const request =
-        tx.objectStore(storeName)
-          .get(key);
-
-      request.onsuccess =
-        () => resolve(request.result);
-
-      request.onerror =
-        () => reject(request.error);
-    }
-  );
-}
-
-function dbGetAll(storeName) {
-  return new Promise(
-    (resolve, reject) => {
-      if (!state.db) {
-        resolve([]);
-        return;
-      }
-
-      const tx =
-        state.db.transaction(
-          storeName,
-          "readonly"
-        );
-
-      const request =
-        tx.objectStore(storeName)
-          .getAll();
-
-      request.onsuccess =
-        () =>
-          resolve(request.result || []);
-
-      request.onerror =
-        () => reject(request.error);
-    }
-  );
-}
-
-function dbDelete(storeName, key) {
-  return new Promise(
-    (resolve, reject) => {
-      if (!state.db) {
-        resolve();
-        return;
-      }
-
-      const tx =
-        state.db.transaction(
-          storeName,
-          "readwrite"
-        );
-
-      const request =
-        tx.objectStore(storeName)
-          .delete(key);
-
-      request.onsuccess =
-        () => resolve();
-
-      request.onerror =
-        () => reject(request.error);
-    }
-  );
-}
-
-function dbClear(storeName) {
-  return new Promise(
-    (resolve, reject) => {
-      if (!state.db) {
-        resolve();
-        return;
-      }
-
-      const tx =
-        state.db.transaction(
-          storeName,
-          "readwrite"
-        );
-
-      const request =
-        tx.objectStore(storeName)
-          .clear();
-
-      request.onsuccess =
-        () => resolve();
-
-      request.onerror =
-        () => reject(request.error);
-    }
-  );
-}
-
-
-/* ============================================================
-   17. 壁紙
-   ============================================================ */
-
-let wallpaperObjectURL = null;
-
-function setWallpaperBlob(blob) {
-  if (wallpaperObjectURL) {
-    URL.revokeObjectURL(
-      wallpaperObjectURL
-    );
-  }
-
-  wallpaperObjectURL =
-    URL.createObjectURL(blob);
-
-  const css =
-    `url("${wallpaperObjectURL}")`;
-
-  if (dom.wallpaper) {
-    dom.wallpaper.style.backgroundImage =
-      css;
-  }
-
-  if (dom.wallpaperPreview) {
-    dom.wallpaperPreview.style.backgroundImage =
-      css;
-  }
-}
-
-async function loadWallpaper() {
-  try {
-    const blob =
-      await dbGet(
-        "assets",
-        "wallpaper"
-      );
-
-    if (blob instanceof Blob) {
-      setWallpaperBlob(blob);
-    }
-  } catch (error) {
-    console.warn(
-      "Luma: wallpaper load failed",
-      error
-    );
-  }
-}
-
-async function saveWallpaper(file) {
-  if (!file) return;
-
-  if (!file.type.startsWith("image/")) {
-    showToast(
-      "画像ファイルを選択してください"
+  let start =
+    data.hourly.time.findIndex(
+      (time) =>
+        new Date(time) >= now
     );
 
-    return;
-  }
+  if (start < 0) start = 0;
 
-  try {
-    await dbPut(
-      "assets",
-      file,
-      "wallpaper"
+  for (
+    let i = start;
+    i < Math.min(
+      start + 8,
+      data.hourly.time.length
     );
-
-    setWallpaperBlob(file);
-
-    showToast("壁紙を変更しました");
-  } catch (error) {
-    console.error(
-      "Luma: wallpaper save failed",
-      error
-    );
-
-    showToast(
-      "壁紙を保存できませんでした"
-    );
-  }
-}
-
-async function resetWallpaper() {
-  try {
-    await dbDelete(
-      "assets",
-      "wallpaper"
-    );
-  } catch (_) {}
-
-  if (wallpaperObjectURL) {
-    URL.revokeObjectURL(
-      wallpaperObjectURL
-    );
-
-    wallpaperObjectURL = null;
-  }
-
-  if (dom.wallpaper) {
-    dom.wallpaper.style.backgroundImage =
-      "";
-  }
-
-  if (dom.wallpaperPreview) {
-    dom.wallpaperPreview.style.backgroundImage =
-      "";
-  }
-
-  showToast(
-    "デフォルト壁紙に戻しました"
-  );
-}
-
-
-/* ============================================================
-   18. ミュージック
-   ============================================================ */
-
-async function loadMusicLibrary() {
-  try {
-    state.music.tracks =
-      await dbGetAll("tracks");
-
-    state.music.tracks.sort(
-      (a, b) =>
-        (a.addedAt || 0) -
-        (b.addedAt || 0)
-    );
-
-    renderMusicLibrary();
-  } catch (error) {
-    console.warn(
-      "Luma: music library load failed",
-      error
-    );
-  }
-}
-
-async function addMusicFiles(files) {
-  const list =
-    Array.from(files || []);
-
-  if (!list.length) return;
-
-  let added = 0;
-
-  for (const file of list) {
-    if (!file.type.startsWith("audio/")) {
-      continue;
-    }
-
-    const track = {
-      id: uid("track"),
-      title:
-        file.name.replace(
-          /\.[^.]+$/,
-          ""
-        ),
-      fileName: file.name,
-      type: file.type,
-      blob: file,
-      addedAt: Date.now() + added
-    };
-
-    try {
-      await dbPut(
-        "tracks",
-        track
-      );
-
-      state.music.tracks.push(track);
-
-      added++;
-    } catch (error) {
-      console.warn(
-        "Luma: track save failed",
-        error
-      );
-    }
-  }
-
-  renderMusicLibrary();
-
-  if (
-    state.music.currentIndex < 0 &&
-    state.music.tracks.length
+    i++
   ) {
-    loadTrack(0, false);
-  }
+    const item =
+      document.createElement("div");
 
-  showToast(
-    added
-      ? `${added}曲追加しました`
-      : "追加できる音楽がありませんでした"
-  );
-}
+    item.className =
+      "forecast-item";
 
-function renderMusicLibrary() {
-  if (!dom.musicLibrary) return;
+    item.innerHTML = `
+      <small>
+        ${new Date(
+          data.hourly.time[i]
+        ).getHours()}時
+      </small>
 
-  dom.musicLibrary.innerHTML = "";
-
-  if (!state.music.tracks.length) {
-    dom.musicLibrary.innerHTML = `
-      <div class="home-empty">
-        ＋からこの端末の音楽を追加できます
+      <div style="font-size:25px">
+        ${weatherIcon(
+          data.hourly.weather_code[i]
+        )}
       </div>
+
+      <strong>
+        ${Math.round(
+          data.hourly.temperature_2m[i]
+        )}°
+      </strong>
+
+      <small>
+        ${data.hourly.precipitation_probability[i]}%
+      </small>
     `;
 
-    return;
+    hourly.appendChild(item);
   }
 
-  state.music.tracks.forEach(
-    (track, index) => {
-      const row =
+  const daily =
+    $("#dailyWeather");
+
+  daily.innerHTML = "";
+
+  data.daily.time
+    .forEach((date, i) => {
+
+      const item =
         document.createElement("div");
 
-      row.className =
-        "track-row squishy-soft";
+      item.className =
+        "forecast-item";
 
-      if (
-        index ===
-        state.music.currentIndex
-      ) {
-        row.classList.add("active");
-      }
+      const day =
+        new Intl.DateTimeFormat(
+          "ja-JP",
+          { weekday: "short" }
+        ).format(
+          new Date(`${date}T12:00`)
+        );
 
-      row.innerHTML = `
-        <div class="track-name">
-          ${escapeHTML(track.title)}
+      item.innerHTML = `
+        <small>${day}</small>
+
+        <div style="font-size:25px">
+          ${weatherIcon(
+            data.daily.weather_code[i]
+          )}
         </div>
 
-        <button
-          class="icon-button track-delete squishy"
-          data-id="${track.id}"
-          type="button"
-          aria-label="曲を削除"
-        >
-          ×
-        </button>
+        <strong>
+          ${Math.round(
+            data.daily.temperature_2m_max[i]
+          )}°
+        </strong>
+
+        <small>
+          ${Math.round(
+            data.daily.temperature_2m_min[i]
+          )}°
+        </small>
       `;
 
-      row.addEventListener(
-        "click",
-        (event) => {
-          if (
-            event.target.closest(
-              ".track-delete"
-            )
-          ) {
-            return;
-          }
-
-          loadTrack(index, true);
-        }
-      );
-
-      dom.musicLibrary.appendChild(row);
-    }
-  );
-
-  installSquishForNewElements(
-    dom.musicLibrary
-  );
+      daily.appendChild(item);
+    });
 }
 
-function loadTrack(
-  index,
-  autoplay = false
-) {
-  const track =
-    state.music.tracks[index];
-
-  if (!track || !dom.audioPlayer) {
-    return;
-  }
-
-  if (state.music.objectURL) {
-    URL.revokeObjectURL(
-      state.music.objectURL
-    );
-  }
-
-  state.music.objectURL =
-    URL.createObjectURL(track.blob);
-
-  dom.audioPlayer.src =
-    state.music.objectURL;
-
-  state.music.currentIndex =
-    index;
-
-  if (dom.musicTitle) {
-    dom.musicTitle.textContent =
-      track.title;
-  }
-
-  if (dom.musicArtist) {
-    dom.musicArtist.textContent =
-      "この端末の音楽";
-  }
-
-  renderMusicLibrary();
-
-  if (autoplay) {
-    dom.audioPlayer
-      .play()
-      .catch((error) => {
-        console.warn(
-          "Luma: audio play blocked",
-          error
-        );
-
-        showToast(
-          "再生ボタンを押してください"
-        );
-      });
-  }
-
-  updateIsland();
-}
-
-function toggleMusic() {
-  if (!dom.audioPlayer) return;
-
-  if (
-    state.music.currentIndex < 0
-  ) {
-    if (
-      state.music.tracks.length
-    ) {
-      loadTrack(0, false);
-    } else {
-      showToast(
-        "先に曲を追加してください"
-      );
-
-      return;
-    }
-  }
-
-  if (dom.audioPlayer.paused) {
-    dom.audioPlayer
-      .play()
-      .catch(() => {
-        showToast(
-          "音楽を再生できませんでした"
-        );
-      });
-  } else {
-    dom.audioPlayer.pause();
-  }
-}
-
-function nextTrack() {
-  if (!state.music.tracks.length) {
-    return;
-  }
-
-  let next =
-    state.music.currentIndex + 1;
-
-  if (
-    next >= state.music.tracks.length
-  ) {
-    next = 0;
-  }
-
-  loadTrack(next, true);
-}
-
-function previousTrack() {
-  if (!state.music.tracks.length) {
-    return;
-  }
-
-  let previous =
-    state.music.currentIndex - 1;
-
-  if (previous < 0) {
-    previous =
-      state.music.tracks.length - 1;
-  }
-
-  loadTrack(previous, true);
-}
-
-async function deleteTrack(id) {
-  const index =
-    state.music.tracks.findIndex(
-      (track) => track.id === id
-    );
-
-  if (index < 0) return;
-
-  const deletingCurrent =
-    index ===
-    state.music.currentIndex;
-
-  try {
-    await dbDelete(
-      "tracks",
-      id
-    );
-  } catch (error) {
-    console.warn(
-      "Luma: track delete failed",
-      error
-    );
-  }
-
-  state.music.tracks.splice(
-    index,
-    1
-  );
-
-  if (deletingCurrent) {
-    dom.audioPlayer?.pause();
-
-    if (state.music.objectURL) {
-      URL.revokeObjectURL(
-        state.music.objectURL
-      );
-
-      state.music.objectURL = null;
-    }
-
-    state.music.currentIndex = -1;
-
-    if (dom.audioPlayer) {
-      dom.audioPlayer.removeAttribute(
-        "src"
-      );
-
-      dom.audioPlayer.load();
-    }
-
-    if (dom.musicTitle) {
-      dom.musicTitle.textContent =
-        "曲を追加してください";
-    }
-
-    if (dom.musicArtist) {
-      dom.musicArtist.textContent =
-        "この端末の音楽";
-    }
-  } else if (
-    index <
-    state.music.currentIndex
-  ) {
-    state.music.currentIndex--;
-  }
-
-  renderMusicLibrary();
-  updateIsland();
-}
-
-
-/* ============================================================
-   19. Dynamic Island
-   ============================================================ */
-
-function updateIsland() {
-  if (!dom.dynamicIsland) return;
-
-  /*
-    優先順位
-    1. タイマー
-    2. 再生中の音楽
-    3. Luma
-  */
-
-  if (
-    state.settings.timerIsland &&
-    (
-      state.timer.running ||
-      state.timer.paused
-    ) &&
-    state.timer.remainingMs > 0
-  ) {
-    dom.islandArtwork?.classList.remove(
-      "hidden"
-    );
-
-    if (dom.islandArtwork) {
-      dom.islandArtwork.textContent =
-        "⏱";
-    }
-
-    if (dom.islandTitle) {
-      dom.islandTitle.textContent =
-        state.timer.running
-          ? "タイマー"
-          : "タイマー 一時停止";
-    }
-
-    if (dom.islandSubtitle) {
-      dom.islandSubtitle.textContent =
-        "Luma Timer";
-    }
-
-    if (dom.islandRight) {
-      dom.islandRight.textContent =
-        formatDuration(
-          Math.ceil(
-            state.timer.remainingMs /
-            1000
-          )
-        );
-    }
-
-    return;
-  }
-
-  const audio =
-    dom.audioPlayer;
-
-  const currentTrack =
-    state.music.tracks[
-      state.music.currentIndex
-    ];
-
-  if (
-    state.settings.musicIsland &&
-    audio &&
-    !audio.paused &&
-    currentTrack
-  ) {
-    dom.islandArtwork?.classList.remove(
-      "hidden"
-    );
-
-    if (dom.islandArtwork) {
-      dom.islandArtwork.textContent =
-        "♪";
-    }
-
-    if (dom.islandTitle) {
-      dom.islandTitle.textContent =
-        currentTrack.title;
-    }
-
-    if (dom.islandSubtitle) {
-      dom.islandSubtitle.textContent =
-        "再生中";
-    }
-
-    if (dom.islandRight) {
-      dom.islandRight.textContent =
-        "Ⅱ";
-    }
-
-    return;
-  }
-
-  dom.islandArtwork?.classList.add(
-    "hidden"
-  );
-
-  if (dom.islandTitle) {
-    dom.islandTitle.textContent =
-      "Luma";
-  }
-
-  if (dom.islandSubtitle) {
-    dom.islandSubtitle.textContent =
-      "OS 1.0";
-  }
-
-  if (dom.islandRight) {
-    dom.islandRight.textContent = "";
-  }
-}
-
-
-/* ============================================================
-   20. 設定タブ
-   ============================================================ */
-
-function openSettingsPanel(name) {
-  $$(".settings-tab").forEach(
-    (button) => {
-      button.classList.toggle(
-        "active",
-        button.dataset.settings === name
-      );
-    }
-  );
-
-  $$(".settings-panel").forEach(
-    (panel) => {
-      panel.classList.remove("active");
-    }
-  );
-
-  $(`#settings-${name}`)
-    ?.classList.add("active");
-}
-
-
-/* ============================================================
-   21. 全データリセット
-   ============================================================ */
-
-async function resetAllData() {
-  const confirmed =
-    window.confirm(
-      "Lumaの設定・アラーム・予定・壁紙・保存した曲をすべて削除しますか？"
-    );
-
-  if (!confirmed) return;
-
-  try {
-    dom.audioPlayer?.pause();
-
-    localStorage.removeItem(
-      "lumaSettings"
-    );
-
-    localStorage.removeItem(
-      "lumaAlarms"
-    );
-
-    localStorage.removeItem(
-      "lumaReminders"
-    );
-
-    await dbClear("assets");
-    await dbClear("tracks");
-
-    showToast(
-      "Lumaをリセットしました"
-    );
-
-    setTimeout(() => {
-      location.reload();
-    }, 700);
-  } catch (error) {
-    console.error(
-      "Luma: reset failed",
-      error
-    );
-
-    showToast(
-      "リセットに失敗しました"
-    );
-  }
-}
-
-
-/* ============================================================
-   22. 動的要素にもボヨン
-   ============================================================ */
-
-function installSquishForNewElements(
-  root
-) {
-  if (!root) return;
-
-  const targets = [
-    ...root.querySelectorAll(
-      ".squishy, .squishy-soft"
-    )
-  ];
-
-  targets.forEach((element) => {
-    if (
-      element.dataset.squishInstalled ===
-      "true"
-    ) {
-      return;
-    }
-
-    element.dataset.squishInstalled =
-      "true";
-
-    element.addEventListener(
-      "pointerdown",
-      (event) => {
-        if (
-          event.pointerType === "mouse" &&
-          event.button !== 0
-        ) {
-          return;
-        }
-
-        squishElement(
-          element,
-          event
-        );
-      },
-      { passive: true }
-    );
-
-    element.addEventListener(
-      "pointerup",
-      () =>
-        releaseSquish(element),
-      { passive: true }
-    );
-
-    element.addEventListener(
-      "pointercancel",
-      () =>
-        releaseSquish(element),
-      { passive: true }
-    );
-
-    element.addEventListener(
-      "pointerleave",
-      () =>
-        releaseSquish(element),
-      { passive: true }
-    );
-  });
-}
-
-
-/* ============================================================
-   23. イベント
-   ============================================================ */
-
-function installEvents() {
-
-  /* --------------------------
-     メニュー
-  -------------------------- */
-
-  dom.menuButton?.addEventListener(
-    "click",
-    openMenu
-  );
-
-  dom.menuCloseButton?.addEventListener(
-    "click",
-    closeMenu
-  );
-
-  dom.menuBackdrop?.addEventListener(
-    "click",
-    closeMenu
-  );
-
-  $$(".menu-item").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          openPage(
-            button.dataset.page
-          );
-        }
-      );
-    }
-  );
-
-  $$(".close-page").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => openPage("home")
-      );
-    }
-  );
-
-
-  /* --------------------------
-     ホーム
-  -------------------------- */
-
-  dom.homeWeather?.addEventListener(
-    "click",
-    () => {
-      openPage("weather");
-
-      if (
-        !state.settings.weatherLocation
-      ) {
-        openModal("weatherModal");
+$("#weatherSearchForm")
+  .addEventListener(
+    "submit",
+    (event) => {
+
+      event.preventDefault();
+
+      const city =
+        $("#weatherSearchInput")
+          .value.trim();
+
+      if (city) {
+        searchWeather(city);
       }
     }
   );
 
-  dom.homeReminderAdd?.addEventListener(
+$("#weatherCard")
+  .addEventListener(
     "click",
-    prepareReminderModal
-  );
-
-
-  /* --------------------------
-     モーダル
-  -------------------------- */
-
-  $$(".modal-close").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          closeModal(
-            button.dataset.closeModal
-          );
-        }
-      );
-    }
-  );
-
-  $$(".modal-layer").forEach(
-    (modal) => {
-      modal.addEventListener(
-        "pointerdown",
-        (event) => {
-          if (event.target === modal) {
-            modal.classList.remove(
-              "show"
-            );
-          }
-        }
-      );
+    () => {
+      openPage("weatherPage");
     }
   );
 
 
-  /* --------------------------
-     リマインダー
-  -------------------------- */
+/* =========================================================
+   WALLPAPER
+   ========================================================= */
 
-  $("#addReminderButton")
-    ?.addEventListener(
-      "click",
-      prepareReminderModal
-    );
+function applyWallpaperBlob(blob) {
+  const url =
+    URL.createObjectURL(blob);
 
-  $("#saveReminderButton")
-    ?.addEventListener(
-      "click",
-      addReminder
-    );
+  $("#wallpaper")
+    .style.backgroundImage =
+      `url("${url}")`;
+}
 
-  dom.reminderList?.addEventListener(
+$("#wallpaperInput")
+  .addEventListener(
+    "change",
+    async (event) => {
+
+      const file =
+        event.target.files?.[0];
+
+      if (!file) return;
+
+      await safeAsync(async () => {
+        await saveWallpaper(file);
+        applyWallpaperBlob(file);
+      });
+    }
+  );
+
+$("#resetWallpaper")
+  .addEventListener(
     "click",
+    async () => {
+
+      await safeAsync(
+        deleteWallpaper
+      );
+
+      $("#wallpaper")
+        .style.backgroundImage = "";
+
+      $("#wallpaperInput")
+        .value = "";
+    }
+  );
+
+
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+function applySettings() {
+  document.documentElement
+    .style.setProperty(
+      "--glass-opacity",
+      settings.glassOpacity / 100
+    );
+
+  document.documentElement
+    .style.setProperty(
+      "--glass-blur",
+      `${settings.glassBlur}px`
+    );
+
+  document.documentElement
+    .style.setProperty(
+      "--reflection",
+      settings.reflection / 100
+    );
+
+  $("#wallpaper")
+    .style.filter =
+      `brightness(${settings.brightness}%) ` +
+      `blur(${settings.blur}px)`;
+
+  $("#wallpaper")
+    .style.transform =
+      `scale(${settings.zoom / 100})`;
+
+  $("#secondsToggle").checked =
+    settings.seconds;
+
+  $("#trailToggle").checked =
+    settings.trail;
+
+  $("#sceneToggle").checked =
+    settings.scene;
+
+  $("#wallpaperBrightness").value =
+    settings.brightness;
+
+  $("#wallpaperBlur").value =
+    settings.blur;
+
+  $("#wallpaperZoom").value =
+    settings.zoom;
+
+  $("#glassOpacity").value =
+    settings.glassOpacity;
+
+  $("#glassBlur").value =
+    settings.glassBlur;
+
+  $("#glassReflection").value =
+    settings.reflection;
+}
+
+function bindSetting(
+  selector,
+  key,
+  converter = Number
+) {
+  $(selector).addEventListener(
+    "input",
     (event) => {
-      const toggle =
-        event.target.closest(
-          ".reminder-toggle"
+
+      settings[key] =
+        converter(event.target.value);
+
+      saveSettings();
+      applySettings();
+    }
+  );
+}
+
+bindSetting(
+  "#wallpaperBrightness",
+  "brightness"
+);
+
+bindSetting(
+  "#wallpaperBlur",
+  "blur"
+);
+
+bindSetting(
+  "#wallpaperZoom",
+  "zoom"
+);
+
+bindSetting(
+  "#glassOpacity",
+  "glassOpacity"
+);
+
+bindSetting(
+  "#glassBlur",
+  "glassBlur"
+);
+
+bindSetting(
+  "#glassReflection",
+  "reflection"
+);
+
+$("#secondsToggle")
+  .addEventListener(
+    "change",
+    (event) => {
+
+      settings.seconds =
+        event.target.checked;
+
+      saveSettings();
+      updateClock();
+    }
+  );
+
+$("#trailToggle")
+  .addEventListener(
+    "change",
+    (event) => {
+
+      settings.trail =
+        event.target.checked;
+
+      saveSettings();
+    }
+  );
+
+$("#sceneToggle")
+  .addEventListener(
+    "change",
+    (event) => {
+
+      settings.scene =
+        event.target.checked;
+
+      saveSettings();
+      updateClock();
+    }
+  );
+
+
+/* =========================================================
+   DYNAMIC ISLAND 2
+   ========================================================= */
+
+$("#dynamicIsland")
+  .addEventListener(
+    "click",
+    () => {
+
+      $("#dynamicIsland")
+        .classList.toggle(
+          "expanded"
         );
 
-      if (toggle) {
-        toggleReminder(
-          toggle.dataset.id
-        );
+      if (timerRunning) {
+        openPage("timerPage");
+      }
+    }
+  );
+
+
+/* =========================================================
+   FOCUS
+   ========================================================= */
+
+function renderFocus() {
+  $("#focusTime").textContent =
+    formatDuration(
+      focusRemaining
+    );
+}
+
+$("#focusButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      $("#focusMode")
+        .classList.add("show");
+    }
+  );
+
+$("#closeFocus")
+  .addEventListener(
+    "click",
+    () => {
+
+      $("#focusMode")
+        .classList.remove("show");
+    }
+  );
+
+$("#focusStart")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (focusInterval) {
+        clearInterval(focusInterval);
+
+        focusInterval = null;
+
+        $("#focusStart")
+          .textContent = "▶";
 
         return;
       }
 
-      const del =
-        event.target.closest(
-          ".reminder-delete"
-        );
+      $("#focusStart")
+        .textContent = "Ⅱ";
 
-      if (del) {
-        deleteReminder(
-          del.dataset.id
-        );
-      }
-    }
-  );
+      focusInterval =
+        setInterval(() => {
 
-  dom.homeReminderList
-    ?.addEventListener(
-      "click",
-      (event) => {
-        const button =
-          event.target.closest(
-            ".home-reminder-toggle"
-          );
+          focusRemaining--;
 
-        if (button) {
-          toggleReminder(
-            button.dataset.id
-          );
-        }
-      }
-    );
+          renderFocus();
 
-
-  /* --------------------------
-     アラーム
-  -------------------------- */
-
-  $("#addAlarmButton")
-    ?.addEventListener(
-      "click",
-      prepareAlarmModal
-    );
-
-  $("#saveAlarmButton")
-    ?.addEventListener(
-      "click",
-      addAlarm
-    );
-
-  dom.alarmList?.addEventListener(
-    "change",
-    (event) => {
-      const toggle =
-        event.target.closest(
-          ".alarm-toggle"
-        );
-
-      if (!toggle) return;
-
-      const alarm =
-        state.alarms.find(
-          (item) =>
-            item.id ===
-            toggle.dataset.id
-        );
-
-      if (!alarm) return;
-
-      alarm.enabled =
-        toggle.checked;
-
-      saveAlarms();
-    }
-  );
-
-  dom.alarmList?.addEventListener(
-    "click",
-    (event) => {
-      const del =
-        event.target.closest(
-          ".alarm-delete"
-        );
-
-      if (!del) return;
-
-      state.alarms =
-        state.alarms.filter(
-          (alarm) =>
-            alarm.id !==
-            del.dataset.id
-        );
-
-      saveAlarms();
-      renderAlarms();
-    }
-  );
-
-
-  /* --------------------------
-     タイマー
-  -------------------------- */
-
-  $$(".preset-button").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          const minutes =
-            Number(
-              button.dataset.minutes
+          if (
+            focusRemaining <= 0
+          ) {
+            clearInterval(
+              focusInterval
             );
 
-          setTimerInputs(
-            minutes * 60
-          );
+            focusInterval = null;
 
-          state.timer.paused = false;
-          state.timer.originalMs =
-            minutes * 60 * 1000;
-        }
-      );
+            focusRemaining =
+              25 * 60;
+
+            renderFocus();
+
+            ring("Focus終了");
+
+            $("#focusStart")
+              .textContent = "▶";
+          }
+
+        }, 1000);
     }
   );
 
-  $("#timerStart")
-    ?.addEventListener(
-      "click",
-      startTimer
-    );
 
-  $("#timerPause")
-    ?.addEventListener(
-      "click",
-      pauseTimer
-    );
+/* =========================================================
+   NIGHT CLOCK
+   ========================================================= */
 
-  $("#timerReset")
-    ?.addEventListener(
-      "click",
-      resetTimer
-    );
+$("#nightClockButton")
+  .addEventListener(
+    "click",
+    () => {
 
-  [
-    dom.timerHours,
-    dom.timerMinutes,
-    dom.timerSecondsInput
-  ].forEach((input) => {
-    input?.addEventListener(
-      "change",
-      () => {
-        if (!state.timer.running) {
-          state.timer.paused = false;
-          state.timer.remainingMs =
-            readTimerInputMs();
+      $("#nightClock")
+        .classList.add("show");
+    }
+  );
 
-          state.timer.originalMs =
-            state.timer.remainingMs;
+$("#closeNightClock")
+  .addEventListener(
+    "click",
+    () => {
 
-          updateTimerDisplay();
-        }
+      $("#nightClock")
+        .classList.remove("show");
+    }
+  );
+
+
+/* =========================================================
+   AMBIENT MODE
+   ========================================================= */
+
+let ambientTimer = null;
+
+function resetAmbient() {
+  clearTimeout(ambientTimer);
+
+  document.body.classList
+    .remove("ambient");
+
+  ambientTimer =
+    setTimeout(() => {
+
+      if (
+        $(".page.active")?.id ===
+        "homePage"
+      ) {
+        document.body.classList
+          .add("ambient");
       }
+
+    }, 120000);
+}
+
+["pointerdown", "pointermove", "keydown"]
+  .forEach((eventName) => {
+
+    document.addEventListener(
+      eventName,
+      resetAmbient,
+      { passive: true }
     );
   });
 
 
-  /* --------------------------
-     ストップウォッチ
-  -------------------------- */
+/* =========================================================
+   HELPERS
+   ========================================================= */
 
-  $("#stopwatchStart")
-    ?.addEventListener(
-      "click",
-      toggleStopwatch
-    );
+function escapeHTML(value) {
+  const div =
+    document.createElement("div");
 
-  $("#stopwatchLap")
-    ?.addEventListener(
-      "click",
-      addLap
-    );
+  div.textContent =
+    String(value);
 
-  $("#stopwatchReset")
-    ?.addEventListener(
-      "click",
-      resetStopwatch
-    );
-
-
-  /* --------------------------
-     天気
-  -------------------------- */
-
-  $("#weatherSearchButton")
-    ?.addEventListener(
-      "click",
-      () => {
-        openModal(
-          "weatherModal"
-        );
-
-        setTimeout(
-          () =>
-            dom.weatherSearchInput
-              ?.focus(),
-          100
-        );
-      }
-    );
-
-  $("#weatherSearchSubmit")
-    ?.addEventListener(
-      "click",
-      searchWeatherCities
-    );
-
-  dom.weatherSearchInput
-    ?.addEventListener(
-      "keydown",
-      (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-
-          searchWeatherCities();
-        }
-      }
-    );
-
-
-  /* --------------------------
-     ミュージック
-  -------------------------- */
-
-  dom.musicFileInput
-    ?.addEventListener(
-      "change",
-      async (event) => {
-        await addMusicFiles(
-          event.target.files
-        );
-
-        event.target.value = "";
-      }
-    );
-
-  dom.musicPlay?.addEventListener(
-    "click",
-    toggleMusic
-  );
-
-  dom.musicPrevious
-    ?.addEventListener(
-      "click",
-      previousTrack
-    );
-
-  dom.musicNext?.addEventListener(
-    "click",
-    nextTrack
-  );
-
-  dom.musicVolume?.addEventListener(
-    "input",
-    () => {
-      if (dom.audioPlayer) {
-        dom.audioPlayer.volume =
-          Number(
-            dom.musicVolume.value
-          );
-      }
-    }
-  );
-
-  dom.musicProgress
-    ?.addEventListener(
-      "input",
-      () => {
-        const audio =
-          dom.audioPlayer;
-
-        if (
-          !audio ||
-          !Number.isFinite(
-            audio.duration
-          ) ||
-          audio.duration <= 0
-        ) {
-          return;
-        }
-
-        audio.currentTime =
-          (
-            Number(
-              dom.musicProgress.value
-            ) / 100
-          ) *
-          audio.duration;
-      }
-    );
-
-  dom.audioPlayer
-    ?.addEventListener(
-      "play",
-      () => {
-        if (dom.musicPlay) {
-          dom.musicPlay.textContent =
-            "Ⅱ";
-        }
-
-        updateIsland();
-      }
-    );
-
-  dom.audioPlayer
-    ?.addEventListener(
-      "pause",
-      () => {
-        if (dom.musicPlay) {
-          dom.musicPlay.textContent =
-            "▶";
-        }
-
-        updateIsland();
-      }
-    );
-
-  dom.audioPlayer
-    ?.addEventListener(
-      "timeupdate",
-      () => {
-        const audio =
-          dom.audioPlayer;
-
-        if (!audio) return;
-
-        if (
-          Number.isFinite(
-            audio.duration
-          ) &&
-          audio.duration > 0
-        ) {
-          dom.musicProgress.value =
-            (
-              audio.currentTime /
-              audio.duration
-            ) * 100;
-
-          dom.musicDuration.textContent =
-            formatMediaTime(
-              audio.duration
-            );
-        }
-
-        dom.musicCurrentTime.textContent =
-          formatMediaTime(
-            audio.currentTime
-          );
-      }
-    );
-
-  dom.audioPlayer
-    ?.addEventListener(
-      "ended",
-      nextTrack
-    );
-
-  dom.musicLibrary
-    ?.addEventListener(
-      "click",
-      async (event) => {
-        const button =
-          event.target.closest(
-            ".track-delete"
-          );
-
-        if (!button) return;
-
-        event.stopPropagation();
-
-        await deleteTrack(
-          button.dataset.id
-        );
-      }
-    );
-
-
-  /* --------------------------
-     設定タブ
-  -------------------------- */
-
-  $$(".settings-tab").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          openSettingsPanel(
-            button.dataset.settings
-          );
-        }
-      );
-    }
-  );
-
-
-  /* --------------------------
-     表示設定
-  -------------------------- */
-
-  dom.showSecondsSetting
-    ?.addEventListener(
-      "change",
-      () => {
-        state.settings.showSeconds =
-          dom.showSecondsSetting.checked;
-
-        saveSettings();
-        applySettings();
-      }
-    );
-
-  dom.showHomeReminderSetting
-    ?.addEventListener(
-      "change",
-      () => {
-        state.settings.showHomeReminder =
-          dom.showHomeReminderSetting
-            .checked;
-
-        saveSettings();
-        applySettings();
-      }
-    );
-
-  dom.showHomeWeatherSetting
-    ?.addEventListener(
-      "change",
-      () => {
-        state.settings.showHomeWeather =
-          dom.showHomeWeatherSetting
-            .checked;
-
-        saveSettings();
-        applySettings();
-      }
-    );
-
-
-  /* --------------------------
-     壁紙設定
-  -------------------------- */
-
-  dom.wallpaperFileInput
-    ?.addEventListener(
-      "change",
-      async (event) => {
-        const file =
-          event.target.files?.[0];
-
-        if (file) {
-          await saveWallpaper(file);
-        }
-
-        event.target.value = "";
-      }
-    );
-
-  $("#resetWallpaperButton")
-    ?.addEventListener(
-      "click",
-      resetWallpaper
-    );
-
-  dom.wallpaperBrightness
-    ?.addEventListener(
-      "input",
-      () => {
-        state.settings.wallpaperBrightness =
-          Number(
-            dom.wallpaperBrightness.value
-          );
-
-        saveSettings();
-        applySettings();
-      }
-    );
-
-
-  /* --------------------------
-     時計ガラス設定
-  -------------------------- */
-
-  $$(".glass-color").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          state.settings.clockColor =
-            button.dataset.color;
-
-          saveSettings();
-          applySettings();
-        }
-      );
-    }
-  );
-
-  dom.clockOpacity
-    ?.addEventListener(
-      "input",
-      () => {
-        state.settings.clockOpacity =
-          Number(
-            dom.clockOpacity.value
-          );
-
-        saveSettings();
-        applySettings();
-      }
-    );
-
-  dom.clockBrightness
-    ?.addEventListener(
-      "input",
-      () => {
-        state.settings.clockBrightness =
-          Number(
-            dom.clockBrightness.value
-          );
-
-        saveSettings();
-        applySettings();
-      }
-    );
-
-  dom.squishStrength
-    ?.addEventListener(
-      "input",
-      () => {
-        state.settings.squishStrength =
-          Number(
-            dom.squishStrength.value
-          );
-
-        saveSettings();
-        syncSettingsUI();
-      }
-    );
-
-  dom.clockFontSetting
-    ?.addEventListener(
-      "change",
-      () => {
-        state.settings.clockFont =
-          dom.clockFontSetting.value;
-
-        saveSettings();
-        applySettings();
-      }
-    );
-
-
-  /* --------------------------
-     Island設定
-  -------------------------- */
-
-  dom.timerIslandSetting
-    ?.addEventListener(
-      "change",
-      () => {
-        state.settings.timerIsland =
-          dom.timerIslandSetting
-            .checked;
-
-        saveSettings();
-        updateIsland();
-      }
-    );
-
-  dom.musicIslandSetting
-    ?.addEventListener(
-      "change",
-      () => {
-        state.settings.musicIsland =
-          dom.musicIslandSetting
-            .checked;
-
-        saveSettings();
-        updateIsland();
-      }
-    );
-
-
-  /* --------------------------
-     リセット
-  -------------------------- */
-
-  $("#resetAllButton")
-    ?.addEventListener(
-      "click",
-      resetAllData
-    );
-
-
-  /* --------------------------
-     鳴動停止
-  -------------------------- */
-
-  $("#ringStopButton")
-    ?.addEventListener(
-      "click",
-      stopRing
-    );
-
-
-  /* --------------------------
-     Islandタップ
-  -------------------------- */
-
-  dom.dynamicIsland
-    ?.addEventListener(
-      "click",
-      () => {
-        if (
-          state.timer.running ||
-          state.timer.paused
-        ) {
-          openPage("timer");
-          return;
-        }
-
-        if (
-          dom.audioPlayer &&
-          !dom.audioPlayer.paused
-        ) {
-          openPage("music");
-        }
-      }
-    );
-
-
-  /* --------------------------
-     タブ復帰
-  -------------------------- */
-
-  document.addEventListener(
-    "visibilitychange",
-    () => {
-      if (
-        document.visibilityState ===
-        "visible"
-      ) {
-        if (state.timer.running) {
-          timerTick();
-        }
-
-        updateClock();
-      }
-    }
-  );
+  return div.innerHTML;
 }
 
 
-/* ============================================================
-   24. 初期化
-   ============================================================ */
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
 
 async function init() {
-  /*
-    重要：
-    前回と違い、state（アラーム等）は
-    この時点ですでに全て初期化済み。
-  */
-
-  cacheDOM();
-
-  installEvents();
-
-  installSquish();
+  loadState();
 
   applySettings();
 
-  renderReminders();
+  setupNavigation();
+  setupLivingGlass();
+  setupPeek();
+
   renderAlarms();
+  renderReminders();
+  renderTimer();
+  renderStopwatch();
+  renderFocus();
+
+  resizeTrailCanvas();
+
+  window.addEventListener(
+    "resize",
+    resizeTrailCanvas
+  );
+
+  drawTrail();
 
   updateClock();
-  updateStopwatchDisplay();
 
-  state.timer.remainingMs =
-    readTimerInputMs();
-
-  state.timer.originalMs =
-    state.timer.remainingMs;
-
-  updateTimerDisplay();
-
-  updateIsland();
-
-  if (dom.audioPlayer) {
-    dom.audioPlayer.volume =
-      Number(
-        dom.musicVolume?.value || 0.8
-      );
-  }
-
-  /*
-    時計は最後に定期実行開始。
-    初期化途中でcheckAlarms()を呼ばない。
-  */
-
-  setInterval(() => {
-    safeRun(
-      "clock update",
-      updateClock
-    );
-  }, 1000);
-
-
-  /* IndexedDB */
-
-  await safeRunAsync(
-    "database initialization",
-    async () => {
-      await openLumaDB();
-
-      await Promise.all([
-        loadWallpaper(),
-        loadMusicLibrary()
-      ]);
-    }
+  setInterval(
+    updateClock,
+    1000
   );
 
+  await safeAsync(async () => {
+    const wallpaper =
+      await getWallpaper();
 
-  /* 天気 */
-
-  if (
-    state.settings.weatherLocation
-  ) {
-    await safeRunAsync(
-      "weather initialization",
-      fetchWeather
-    );
-  } else {
-    renderWeather();
-  }
-
-
-  /*
-    30分ごとに天気を更新。
-    都市が設定されている場合のみ。
-  */
-
-  setInterval(() => {
-    if (
-      state.settings.weatherLocation
-    ) {
-      safeRunAsync(
-        "weather refresh",
-        fetchWeather
+    if (wallpaper) {
+      applyWallpaperBlob(
+        wallpaper
       );
     }
-  }, 30 * 60 * 1000);
-
-
-  openPage("home");
-
-  console.log(
-    "Luma OS 1.0 ready."
-  );
-}
-
-
-/* ============================================================
-   25. 起動
-   ============================================================ */
-
-if (
-  document.readyState === "loading"
-) {
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-      init().catch((error) => {
-        console.error(
-          "Luma fatal initialization error:",
-          error
-        );
-      });
-    }
-  );
-} else {
-  init().catch((error) => {
-    console.error(
-      "Luma fatal initialization error:",
-      error
-    );
   });
+
+  const savedCity =
+    localStorage.getItem(
+      "luma2_weather_city"
+    );
+
+  if (savedCity) {
+    searchWeather(savedCity);
+  }
+
+  setTimeout(() => {
+    $("#bootScreen")
+      .classList.add("hide");
+  }, 1500);
+
+  resetAmbient();
 }
+
+init();
